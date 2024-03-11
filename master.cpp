@@ -76,7 +76,6 @@ namespace std
 std::vector<std::pair<int, int>>
 Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
 {
-
     struct CompareAStarNode
     {
         bool operator()(const AStarNode *lhs, const AStarNode *rhs) const
@@ -85,7 +84,7 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
         }
     };
 
-    std::set<AStarNode *, CompareAStarNode> open_set;
+    std::multiset<AStarNode *, CompareAStarNode> open_set;
     std::unordered_set<std::pair<int, int>> close_set;
     std::vector<std::pair<int, int>> path;
 
@@ -152,9 +151,10 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
             else
             {
                 neighbor = new AStarNode(nx, ny);
-                neighbor->g = g;
-                neighbor->h = Manhattan(nx, ny, dst_x, dst_y);
+                neighbor->g = g, neighbor->h = Manhattan(nx, ny, dst_x, dst_y);
                 neighbor->f = neighbor->g + neighbor->h;
+                neighbor->prev = current;
+                open_set.insert(neighbor);
             }
         }
     }
