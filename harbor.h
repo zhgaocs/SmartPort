@@ -27,15 +27,20 @@ struct Berth
 struct Boat
 {
     int id;              /* 0 <= id < BOAT_NUM */
-    int capacity;        /* 1 <= capacity <= 1000 */
     int target_berth_id; /* -1 - virtual point */
     int status;          /* 0 - moving, 1 - running, 2 - waiting */
+    int capacity;        /* 1 <= capacity <= 1000*/
 };
 
 struct Item /* goods */
 {
     int x, y;
     int value; /* value <= 1000 */
+
+    bool operator==(const Item &other) const
+    {
+        return x == other.x && y == other.y && value == other.value;
+    }
 };
 
 #endif
