@@ -2,14 +2,12 @@
 #define MASTER_H
 
 #include <algorithm>
-#include <climits>
 #include <iostream>
 #include <set>
 #include <unordered_set>
 #include <utility>
-#include <vector>
 
-#include "harbor.h"
+#include "harbor.h" // <vector>
 #include "utils.h"
 
 class Master
@@ -40,19 +38,6 @@ private:
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
     std::vector<Item> items;
-
-private:
-    /**
-     * these vars used in findPath
-     * for map:
-     * the downward direction is the positive x direction,
-     * the right direction is the positive y direction.
-     */
-    static constexpr char PATHWAY_SYMBOL = '.';
-    static constexpr int NUM_OF_DIRECTIONS = 4;
-    static constexpr int DX[NUM_OF_DIRECTIONS] = {-1, 1, 0, 0};
-    static constexpr int DY[NUM_OF_DIRECTIONS] = {0, 0, -1, 1};
-    static constexpr int COST[NUM_OF_DIRECTIONS] = {1, 1, 1, 1};
 };
 
 #endif
