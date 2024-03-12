@@ -1,5 +1,5 @@
 #ifndef MASTER_H
-#define MASTER_H
+#define MASTER_H 1
 
 #include <algorithm>
 #include <iostream>
