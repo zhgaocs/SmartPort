@@ -33,7 +33,8 @@ void Master::refresh()
 
     /* old item */
     std::for_each(items.begin(), items.end(), [](Item& e){ e.life_span -= 1; });
-    items.erase(std::remove_if(items.begin(), items.end(), [](const Item & e){return e.life_span == 0;}), items.end());
+    items.erase(std::remove_if(items.begin(), items.end(), 
+        [](const Item & e){return e.life_span == 0;}), items.end());
 
     /* new item */
     int new_item_cnt;
@@ -60,7 +61,18 @@ void Master::refresh()
 
 void Master::control()
 {
+    int available_robot_cnt = std::count_if(robots, robots + ROBOT_NUM - 1, 
+    [](const Robot &robot){return robot.has_item == 0 && robot.status == 1;});
 
+    int item_cnt = items.size();
+
+    if(available_robot_cnt > item_cnt)
+    {
+
+    }
+    else
+    {
+    }
 }
 
 /* -------------------------------------used in findPath-------------------------------------- */
@@ -91,6 +103,14 @@ struct CompareAStarNode
 std::vector<std::pair<int, int>>
 Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
 {
+    /*------------------------------------------------------------*/
+    static constexpr char PATHWAY_SYMBOL = '.';
+    static constexpr int NUM_OF_DIRECTIONS = 4;
+    static constexpr int DX[NUM_OF_DIRECTIONS] = {-1, 1, 0, 0};
+    static constexpr int DY[NUM_OF_DIRECTIONS] = {0, 0, -1, 1};
+    static constexpr int COST[NUM_OF_DIRECTIONS] = {1, 1, 1, 1};
+    /*------------------------------------------------------------*/
+
     std::multiset<AStarNode *, CompareAStarNode> open_set;
     std::unordered_set<std::pair<int, int>> close_set;
     std::vector<AStarNode*> close_vec; // wsed to store pointers that are new and are not in open_set
