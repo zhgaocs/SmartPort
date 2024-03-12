@@ -1,6 +1,11 @@
 #ifndef UTILS_H
 #define UTILS_H 1
 
+#include <climits>
+#include <vector>
+
+#define INTEGER_MAX INT_MAX
+
 struct AStarNode
 {
     int x, y;
@@ -8,8 +13,6 @@ struct AStarNode
     int h;
     int f;
     AStarNode *prev;
-
-    static const int INTEGER_MAX = INT_MAX;
 
     AStarNode(int x, int y)
         : x(x), y(y), g(INTEGER_MAX), h(0), f(INTEGER_MAX), prev(nullptr) {}
