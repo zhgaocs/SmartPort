@@ -7,9 +7,6 @@ struct Robot
     int has_item; /* 0 - no items, 1 - has items */
     int status;   /* 0 - recover, 1 - running */
     int dst_x, dst_y;
-
-    Robot() = default;
-    Robot(int startX, int startY) : x(startX), y(startY) {}
 };
 
 struct Berth
@@ -18,10 +15,6 @@ struct Berth
     int x, y;           /* upper left corner */
     int transport_time; /* 1 <=  transport_time <= 1000, transport time to virtual point*/
     int loading_speed;  /* 1 <= loading_speed <= 5, the number of items that can be loaded per frame */
-
-    Berth() = default;
-    Berth(int x, int y, int transport_time, int loading_speed)
-        : x(x), y(y), transport_time(transport_time), loading_speed(loading_speed) {}
 };
 
 struct Boat
@@ -34,13 +27,10 @@ struct Boat
 
 struct Item /* goods */
 {
+    int id;
     int x, y;
     int value; /* value <= 1000 */
-
-    bool operator==(const Item &other) const
-    {
-        return x == other.x && y == other.y && value == other.value;
-    }
+    int life_span; /* life_span <= 1000 */
 };
 
 #endif
