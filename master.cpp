@@ -15,7 +15,6 @@ void Master::init()
         std::cin >> id >> berths[id].x >> berths[id].y >> berths[id].transport_time >> berths[id].loading_speed;
 
     /* boat capacity */
-
     std::cin >> boat_capacity;
     for (int i = 0; i < BOAT_NUM; ++i)
         boats[i].capacity = boat_capacity;
@@ -32,14 +31,19 @@ void Master::refresh()
 
     std::cin >> frame_num >> current_money;
 
+    /* old item */
+    std::for_each(items.begin(), items.end(), [](Item& e){ e.life_span -= 1; });
+    items.erase(std::remove_if(items.begin(), items.end(), [](const Item & e){return e.life_span == 0;}), items.end());
+
     /* new item */
-    int K;
-    std::cin >> K;
-    for (int i = 0; i < K; ++i)
+    int new_item_cnt;
+    std::cin >> new_item_cnt;
+    for (int i = 0; i < new_item_cnt; ++i)
     {
         Item item;
         std::cin >> item.x >> item.y >> item.value;
-        items.insert(item);
+        item.life_span = ITEM_MAX_LIFESPAN;
+        items.push_back(item);
     }
 
     /* robot */
@@ -56,8 +60,10 @@ void Master::refresh()
 
 void Master::control()
 {
+
 }
 
+/* -------------------------------------used in findPath-------------------------------------- */
 namespace std
 {
     template <>
@@ -73,19 +79,21 @@ namespace std
     };
 }
 
+struct CompareAStarNode
+{
+    bool operator()(const AStarNode *lhs, const AStarNode *rhs) const
+    {
+        return lhs->f < rhs->f;
+    }
+};
+/* -------------------------------------used in findPath-------------------------------------- */
+
 std::vector<std::pair<int, int>>
 Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
 {
-    struct CompareAStarNode
-    {
-        bool operator()(const AStarNode *lhs, const AStarNode *rhs) const
-        {
-            return lhs->f < rhs->f;
-        }
-    };
-
     std::multiset<AStarNode *, CompareAStarNode> open_set;
     std::unordered_set<std::pair<int, int>> close_set;
+    std::vector<AStarNode*> close_vec; // wsed to store pointers that are new and are not in open_set
     std::vector<std::pair<int, int>> path;
 
     AStarNode *start = new AStarNode(src_x, src_y);
@@ -112,11 +120,13 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
                           { delete node; });
 
             std::reverse(path.begin(), path.end());
-            return path;
+
+            break;
         }
 
         // move current from open_set to close_set
         open_set.erase(iter);
+        close_vec.push_back(current);
         close_set.insert(std::make_pair(current->x, current->y));
 
         for (int i = 0; i < 4; ++i)
@@ -158,6 +168,8 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
             }
         }
     }
+
+    std::for_each(close_vec.begin(), close_vec.end(), [](AStarNode* nodeptr){delete nodeptr;});
 
     return path;
 }

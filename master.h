@@ -12,18 +12,6 @@
 #include "harbor.h"
 #include "utils.h"
 
-namespace std
-{
-    template <>
-    struct hash<Item>
-    {
-        size_t operator()(const Item &item) const
-        {
-            return hash<int>()(item.x) ^ hash<int>()(item.y) ^ hash<int>()(item.value);
-        }
-    };
-}
-
 class Master
 {
 public:
@@ -43,14 +31,15 @@ private:
     static constexpr int N = 200;
     static constexpr int ROBOT_NUM = 10;
     static constexpr int BERTH_NUM = 10;
-    static constexpr int BOAT_NUM = 10;
+    static constexpr int BOAT_NUM = 5;
+    static constexpr int ITEM_MAX_LIFESPAN = 1000;
 
 private:
     char map[N][N];
     Robot robots[ROBOT_NUM];
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
-    std::unordered_set<Item> items;
+    std::vector<Item> items;
 
 private:
     /**
