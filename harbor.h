@@ -27,7 +27,6 @@ struct Boat
 
 struct Item /* goods */
 {
-    int id;
     int x, y;
     int value; /* value <= 1000 */
     int life_span; /* life_span <= 1000 */
