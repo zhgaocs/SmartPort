@@ -4,6 +4,8 @@
 #include <climits>
 #include <vector>
 
+#define INTEGER_MAX INT_MAX
+
 struct AStarNode
 {
     int x, y;
@@ -11,8 +13,6 @@ struct AStarNode
     int h;
     int f;
     AStarNode *prev;
-
-    static const int INTEGER_MAX = INT_MAX;
 
     AStarNode(int x, int y)
         : x(x), y(y), g(INTEGER_MAX), h(0), f(INTEGER_MAX), prev(nullptr) {}
@@ -26,14 +26,6 @@ inline unsigned int Absolute(int x)
 inline unsigned int Manhattan(int x1, int y1, int x2, int y2)
 {
     return Absolute(x1 - x2) + Absolute(y1 - y2);
-}
-
-
-template <class T>
-std::vector<T> SelectKElements(const std::vector<T>& vec, int K, 
-bool (*comp) (const T&, const T&))
-{
-    
 }
 
 #endif
