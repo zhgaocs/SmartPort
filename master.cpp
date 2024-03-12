@@ -61,18 +61,7 @@ void Master::refresh()
 
 void Master::control()
 {
-    int available_robot_cnt = std::count_if(robots, robots + ROBOT_NUM - 1, 
-    [](const Robot &robot){return robot.has_item == 0 && robot.status == 1;});
-
-    int item_cnt = items.size();
-
-    if(available_robot_cnt > item_cnt)
-    {
-
-    }
-    else
-    {
-    }
+    // TODO
 }
 
 /* -------------------------------------used in findPath-------------------------------------- */
@@ -113,7 +102,7 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
 
     std::multiset<AStarNode *, CompareAStarNode> open_set;
     std::unordered_set<std::pair<int, int>> close_set;
-    std::vector<AStarNode*> close_vec; // wsed to store pointers that are new and are not in open_set
+    std::vector<AStarNode*> close_vec; // used to store pointers that are new and are not in open_set
     std::vector<std::pair<int, int>> path;
 
     AStarNode *start = new AStarNode(src_x, src_y);
