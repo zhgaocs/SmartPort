@@ -86,6 +86,7 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
 
     std::multiset<AStarNode *, CompareAStarNode> open_set;
     std::unordered_set<std::pair<int, int>> close_set;
+    std::vector<AStarNode*> close_vec; // wsed to store pointers that are new and are not in open_set
     std::vector<std::pair<int, int>> path;
 
     AStarNode *start = new AStarNode(src_x, src_y);
@@ -112,11 +113,13 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
                           { delete node; });
 
             std::reverse(path.begin(), path.end());
-            return path;
+
+            break;
         }
 
         // move current from open_set to close_set
         open_set.erase(iter);
+        close_vec.push_back(current);
         close_set.insert(std::make_pair(current->x, current->y));
 
         for (int i = 0; i < 4; ++i)
@@ -158,6 +161,8 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
             }
         }
     }
+
+    std::for_each(close_vec.begin(), close_vec.end(), [](AStarNode* nodeptr){delete nodeptr;});
 
     return path;
 }
