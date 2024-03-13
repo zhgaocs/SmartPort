@@ -42,6 +42,7 @@ private:
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
     std::pair<int, int> tasks[ROBOT_NUM]; // <items[], cost>
+    std::vector<std::pair<int, int>> paths[ROBOT_NUM];
     std::vector<Item> items;
 };
 
