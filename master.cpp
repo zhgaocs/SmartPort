@@ -64,8 +64,8 @@ void Master::update()
 
 void Master::assignTasks()
 {
-    /*----------------------------------------------------------------------------*/
-    int min_cnt = 8;
+    /*------------------------------------------------------------------------------------------------------*/
+    int nearest_num = 8;
 
     typedef std::pair<int, int> IMPair; // I - Item's index in member items, M - manhattan distance to robot
 
@@ -77,7 +77,7 @@ void Master::assignTasks()
         }
     };
 
-    /*----------------------------------------------------------------------------*/
+    /*------------------------------------------------------------------------------------------------------*/
 
     std::priority_queue<IMPair, std::vector<IMPair>, CompareIMPair> queue;
 
@@ -88,7 +88,7 @@ void Master::assignTasks()
             for (int j = 0; j < items.size(); ++j)
                 queue.push(std::make_pair(j, Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y)));
 
-            int remaining = min_cnt, closest_idx, min_dist = INT_MAX;
+            int remaining = nearest_num, closest_idx, min_dist = INT_MAX;
             IMPair pair;
 
             while (!queue.empty() && remaining)
