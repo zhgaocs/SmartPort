@@ -65,47 +65,65 @@ void Master::update()
 void Master::assignTasks()
 {
     /*------------------------------------------------------------------------------------------------------*/
-    int nearest_num = 8;
-
     typedef std::pair<int, int> IMPair; // I - Item's index in member items, M - manhattan distance to robot
 
-    struct CompareIMPair
+    struct CompareIMPair // Max-heap, find k-min
     {
         bool operator()(const IMPair &lhs, const IMPair &rhs) const
         {
             return lhs.second < rhs.second;
         }
     };
-
     /*------------------------------------------------------------------------------------------------------*/
 
+    int nearest_num = 8; // the number of nearest items based on Manhattan distance
     std::priority_queue<IMPair, std::vector<IMPair>, CompareIMPair> queue;
+    std::vector<std::pair<int, int>> path, shortest_path;
 
     for (int i = 0; i < ROBOT_NUM; ++i)
     {
         if (!robots[i].has_item && robots[i].status)
         {
             for (int j = 0; j < items.size(); ++j)
-                queue.push(std::make_pair(j, Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y)));
+            {
+                IMPair pair = std::make_pair(j, Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y));
 
-            int remaining = nearest_num, closest_idx, min_dist = INT_MAX;
+                if (queue.size() < nearest_num)
+                    queue.push(pair);
+                else if (pair.second < queue.top().second)
+                {
+                    queue.pop();
+                    queue.push(pair);
+                }
+            }
+
+            int closest_idx, current_dist, min_dist = INT_MAX;
             IMPair pair;
 
-            while (!queue.empty() && remaining)
+            while (!queue.empty())
             {
                 pair = queue.top();
 
-                int current_dist = findPath(robots[i].x, robots[i].y, items[pair.first].x, items[pair.first].y).size() - 1;
-                if (current_dist < min_dist)
+                path = findPath(robots[i].x, robots[i].y, items[pair.first].x, items[pair.first].y);
+
+                if ((current_dist = path.size()) && current_dist < min_dist) // accessible
                 {
                     closest_idx = pair.first;
                     min_dist = current_dist;
+                    shortest_path = path;
                 }
-
                 queue.pop();
-                --remaining;
             }
-            tasks[i] = std::make_pair(closest_idx, min_dist);
+
+            if(INT_MAX != min_dist) // accessible
+            {
+                tasks[i].first = closest_idx;
+                tasks[i].second = min_dist;
+            }
+            else // not accessible
+            {
+
+            }
         }
     }
 }
