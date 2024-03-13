@@ -1,23 +1,6 @@
 #ifndef UTILS_H
 #define UTILS_H 1
 
-#include <climits>
-#include <vector>
-
-#define INTEGER_MAX INT_MAX
-
-struct AStarNode
-{
-    int x, y;
-    int g;
-    int h;
-    int f;
-    AStarNode *prev;
-
-    AStarNode(int x, int y)
-        : x(x), y(y), g(INTEGER_MAX), h(0), f(INTEGER_MAX), prev(nullptr) {}
-};
-
 inline unsigned int Absolute(int x)
 {
     return x < 0 ? -x : x;
