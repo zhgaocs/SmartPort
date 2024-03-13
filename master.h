@@ -16,7 +16,7 @@
 class Master
 {
 public:
-    Master() = default;
+    Master();
     ~Master() = default;
 
 public:
