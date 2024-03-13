@@ -2,7 +2,7 @@
 
 void Master::init()
 {
-    int id, boat_capacity;
+    int boat_capacity;
     char ok_cstr[3];
 
     /* init map */
@@ -12,7 +12,7 @@ void Master::init()
 
     /* init berth */
     for (int i = 0; i < BERTH_NUM; ++i)
-        std::cin >> id >> berths[id].x >> berths[id].y >> berths[id].transport_time >> berths[id].loading_speed;
+        std::cin >> berths[i].id >> berths[i].x >> berths[i].y >> berths[i].transport_time >> berths[i].loading_speed;
 
     /* boat capacity */
     std::cin >> boat_capacity;
