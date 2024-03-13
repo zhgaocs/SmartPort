@@ -24,7 +24,7 @@ void Master::init()
     std::cout << "OK" << std::flush;
 }
 
-void Master::refresh()
+void Master::update()
 {
     int frame_num, current_money; /* frame_num increase from 1 */
     char ok_cstr[3];
@@ -32,9 +32,12 @@ void Master::refresh()
     std::cin >> frame_num >> current_money;
 
     /* old item */
-    std::for_each(items.begin(), items.end(), [](Item& e){ e.life_span -= 1; });
-    items.erase(std::remove_if(items.begin(), items.end(), 
-        [](const Item & e){return e.life_span == 0;}), items.end());
+    std::for_each(items.begin(), items.end(), [](Item &e)
+                  { e.life_span -= 1; });
+    items.erase(std::remove_if(items.begin(), items.end(),
+                               [](const Item &e)
+                               { return e.life_span == 0; }),
+                items.end());
 
     /* new item */
     int new_item_cnt;
@@ -57,6 +60,54 @@ void Master::refresh()
 
     /* OK */
     std::cin >> ok_cstr;
+}
+
+void Master::assignTasks()
+{
+    /*----------------------------------------------------------------------------*/
+    int min_cnt = 8;
+
+    typedef std::pair<int, int> IMPair; // I - Item's index in member items, M - manhattan distance to robot
+
+    struct CompareIMPair
+    {
+        bool operator()(const IMPair &lhs, const IMPair &rhs) const
+        {
+            return lhs.second < rhs.second;
+        }
+    };
+
+    /*----------------------------------------------------------------------------*/
+
+    std::priority_queue<IMPair, std::vector<IMPair>, CompareIMPair> queue;
+
+    for (int i = 0; i < ROBOT_NUM; ++i)
+    {
+        if (!robots[i].has_item && robots[i].status)
+        {
+            for (int j = 0; j < items.size(); ++j)
+                queue.push(std::make_pair(j, Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y)));
+
+            int remaining = min_cnt, closest_idx, min_dist = INTEGER_MAX;
+            IMPair pair;
+
+            while (!queue.empty() && remaining)
+            {
+                pair = queue.top();
+
+                int current_dist = findPath(robots[i].x, robots[i].y, items[pair.first].x, items[pair.first].y).size() - 1;
+                if (current_dist < min_dist)
+                {
+                    closest_idx = pair.first;
+                    min_dist = current_dist;
+                }
+
+                queue.pop();
+                --remaining;
+            }
+            tasks[i] = std::make_pair(closest_idx, min_dist);
+        }
+    }
 }
 
 void Master::control()
@@ -89,8 +140,10 @@ struct CompareAStarNode
 };
 /* -------------------------------------used in findPath-------------------------------------- */
 
-std::vector<std::pair<int, int>>
-Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
+std::vector<std::pair<int, int>> Master::findPath(int src_x,
+                                                  int src_y,
+                                                  int dst_x,
+                                                  int dst_y)
 {
     /*------------------------------------------------------------*/
     static constexpr char PATHWAY_SYMBOL = '.';
@@ -102,7 +155,8 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
 
     std::multiset<AStarNode *, CompareAStarNode> open_set;
     std::unordered_set<std::pair<int, int>> close_set;
-    std::vector<AStarNode*> close_vec; // used to store pointers that are new and are not in open_set
+    std::vector<AStarNode *>
+        close_vec; // used to store pointers that are new and are not in open_set
     std::vector<std::pair<int, int>> path;
 
     AStarNode *start = new AStarNode(src_x, src_y);
@@ -125,7 +179,8 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
                 current = current->prev;
             }
 
-            std::for_each(open_set.begin(), open_set.end(), [](AStarNode *node)
+            std::for_each(open_set.begin(), open_set.end(),
+                          [](AStarNode *node)
                           { delete node; });
 
             std::reverse(path.begin(), path.end());
@@ -152,7 +207,9 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
 
             auto iter = std::find_if(open_set.begin(), open_set.end(),
                                      [nx, ny](AStarNode *nodeptr)
-                                     { return nx == nodeptr->x && ny == nodeptr->y; });
+                                     {
+                                         return nx == nodeptr->x && ny == nodeptr->y;
+                                     });
 
             int g = current->g + COST[i];
             AStarNode *neighbor = nullptr;
@@ -178,7 +235,9 @@ Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
         }
     }
 
-    std::for_each(close_vec.begin(), close_vec.end(), [](AStarNode* nodeptr){delete nodeptr;});
+    std::for_each(close_vec.begin(), close_vec.end(),
+                  [](AStarNode *nodeptr)
+                  { delete nodeptr; });
 
     return path;
 }
