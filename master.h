@@ -2,11 +2,13 @@
 #define MASTER_H 1
 
 #include <algorithm>
+#include <climits>
 #include <iostream>
 #include <queue>
 #include <set>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "harbor.h" // include <vector>
 #include "utils.h"
