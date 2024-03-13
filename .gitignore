@@ -33,4 +33,3 @@
 
 # Exclude build directory
 /build/
-/test/
