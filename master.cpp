@@ -88,7 +88,7 @@ void Master::assignTasks()
             for (int j = 0; j < items.size(); ++j)
                 queue.push(std::make_pair(j, Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y)));
 
-            int remaining = min_cnt, closest_idx, min_dist = INTEGER_MAX;
+            int remaining = min_cnt, closest_idx, min_dist = INT_MAX;
             IMPair pair;
 
             while (!queue.empty() && remaining)
@@ -130,36 +130,42 @@ namespace std
         }
     };
 }
-
-struct CompareAStarNode
-{
-    bool operator()(const AStarNode *lhs, const AStarNode *rhs) const
-    {
-        return lhs->f < rhs->f;
-    }
-};
 /* -------------------------------------used in findPath-------------------------------------- */
 
-std::vector<std::pair<int, int>> Master::findPath(int src_x,
-                                                  int src_y,
-                                                  int dst_x,
-                                                  int dst_y)
+std::vector<std::pair<int, int>> Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
 {
-    /*------------------------------------------------------------*/
+    /* ------------------------------------------------------------------------------------------- */
     static constexpr char PATHWAY_SYMBOL = '.';
     static constexpr int NUM_OF_DIRECTIONS = 4;
     static constexpr int DX[NUM_OF_DIRECTIONS] = {-1, 1, 0, 0};
     static constexpr int DY[NUM_OF_DIRECTIONS] = {0, 0, -1, 1};
     static constexpr int COST[NUM_OF_DIRECTIONS] = {1, 1, 1, 1};
-    /*------------------------------------------------------------*/
 
-    std::multiset<AStarNode *, CompareAStarNode> open_set;
+    struct Node
+    {
+        int x, y;
+        int g, h, f;
+        Node *prev;
+
+        Node(int x, int y)
+            : x(x), y(y), g(INT_MAX), h(0), f(INT_MAX), prev(nullptr) {}
+    };
+
+    struct CompareNode
+    {
+        bool operator()(const Node *lhs, const Node *rhs) const
+        {
+            return lhs->f < rhs->f;
+        }
+    };
+    /* ------------------------------------------------------------------------------------------- */
+
+    std::multiset<Node *, CompareNode> open_set;
     std::unordered_set<std::pair<int, int>> close_set;
-    std::vector<AStarNode *>
-        close_vec; // used to store pointers that are new and are not in open_set
+    std::vector<Node *> close_vec; // used to store pointers that are new and are not in open_set
     std::vector<std::pair<int, int>> path;
 
-    AStarNode *start = new AStarNode(src_x, src_y);
+    Node *start = new Node(src_x, src_y);
     start->g = 0, start->h = Manhattan(src_x, src_y, dst_x, dst_y);
     start->f = start->g + start->h;
 
@@ -168,7 +174,7 @@ std::vector<std::pair<int, int>> Master::findPath(int src_x,
     while (!open_set.empty())
     {
         auto iter = open_set.begin();
-        AStarNode *current = *iter;
+        Node *current = *iter;
 
         // if current is destination, then the path has been found
         if (current->x == dst_x && current->y == dst_y)
@@ -179,8 +185,7 @@ std::vector<std::pair<int, int>> Master::findPath(int src_x,
                 current = current->prev;
             }
 
-            std::for_each(open_set.begin(), open_set.end(),
-                          [](AStarNode *node)
+            std::for_each(open_set.begin(), open_set.end(), [](Node *node)
                           { delete node; });
 
             std::reverse(path.begin(), path.end());
@@ -206,13 +211,13 @@ std::vector<std::pair<int, int>> Master::findPath(int src_x,
                 continue;
 
             auto iter = std::find_if(open_set.begin(), open_set.end(),
-                                     [nx, ny](AStarNode *nodeptr)
+                                     [nx, ny](Node *nodeptr)
                                      {
                                          return nx == nodeptr->x && ny == nodeptr->y;
                                      });
 
             int g = current->g + COST[i];
-            AStarNode *neighbor = nullptr;
+            Node *neighbor = nullptr;
 
             if (open_set.end() != iter) // in open_set
             {
@@ -226,7 +231,7 @@ std::vector<std::pair<int, int>> Master::findPath(int src_x,
             }
             else
             {
-                neighbor = new AStarNode(nx, ny);
+                neighbor = new Node(nx, ny);
                 neighbor->g = g, neighbor->h = Manhattan(nx, ny, dst_x, dst_y);
                 neighbor->f = neighbor->g + neighbor->h;
                 neighbor->prev = current;
@@ -235,8 +240,7 @@ std::vector<std::pair<int, int>> Master::findPath(int src_x,
         }
     }
 
-    std::for_each(close_vec.begin(), close_vec.end(),
-                  [](AStarNode *nodeptr)
+    std::for_each(close_vec.begin(), close_vec.end(), [](Node *nodeptr)
                   { delete nodeptr; });
 
     return path;
