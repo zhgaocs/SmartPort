@@ -1,5 +1,11 @@
 #include "master.h"
 
+Master::Master()
+{
+    std::for_each(tasks, tasks + ROBOT_NUM, [](std::pair<int, int> &p)
+                  { p.first = -1; });
+}
+
 void Master::init()
 {
     int boat_capacity;
@@ -82,7 +88,7 @@ void Master::assignTasks()
 
     for (int i = 0; i < ROBOT_NUM; ++i)
     {
-        if (!robots[i].has_item && robots[i].status)
+        if (!robots[i].has_item && robots[i].status && tasks[i].first == -1)
         {
             for (int j = 0; j < items.size(); ++j)
             {
@@ -119,10 +125,11 @@ void Master::assignTasks()
             {
                 tasks[i].first = closest_idx;
                 tasks[i].second = min_dist;
+                paths[i] = shortest_path;
             }
             else // not accessible
             {
-
+                // tasks[i].first = -1;
             }
         }
     }
@@ -206,7 +213,7 @@ std::vector<std::pair<int, int>> Master::findPath(int src_x, int src_y, int dst_
             std::for_each(open_set.begin(), open_set.end(), [](Node *node)
                           { delete node; });
 
-            std::reverse(path.begin(), path.end());
+            /* std::reverse(path.begin(), path.end()); */
 
             break;
         }
