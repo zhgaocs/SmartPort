@@ -5,10 +5,10 @@ int main()
     Master master;
     master.init();
 
-    for (int frame_cnt = 0; frame_cnt < 15000; ++frame_cnt)
+    for (int frame_cnt = 0; frame_cnt < 15000; ++frame_cnt) 
     {
-        master.refresh();
-        master.control();
+        master.update();
+        // master.control();
         std::cout << "OK" << std::flush;
     }
 }
