@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <queue>
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -18,7 +19,8 @@ public:
 
 public:
     void init();
-    void refresh();
+    void update();
+    void assignTasks();
     void control();
 
 private:
@@ -37,6 +39,7 @@ private:
     Robot robots[ROBOT_NUM];
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
+    std::pair<int, int> tasks[ROBOT_NUM]; // <items[], cost>
     std::vector<Item> items;
 };
 
