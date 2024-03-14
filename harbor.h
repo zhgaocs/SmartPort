@@ -6,7 +6,6 @@ struct Robot
     int x, y;
     int has_item; /* 0 - no items, 1 - has items */
     int status;   /* 0 - recover, 1 - running */
-    int dst_x, dst_y;
 };
 
 struct Berth
