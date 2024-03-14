@@ -27,7 +27,8 @@ public:
 
 private:
     /// @return reverse path: dst->src
-    std::vector<std::pair<int, int>> findPath(int src_x, int src_y, int dst_x, int dst_y); // return reverse path: dst->src
+    std::vector<std::pair<int, int>> findPath(int src_x, int src_y, int dst_x, int dst_y) const; // return reverse path: dst->src
+    std::vector<std::pair<int, int>> findBerthPoint(int berth_x, int berth_y) const;
 
     /// @param path dst->src
     /// @return directions src->dst, but the vector elements are reversed
@@ -39,6 +40,7 @@ public:
     static constexpr int BERTH_NUM = 10;
     static constexpr int BOAT_NUM = 5;
     static constexpr int ITEM_MAX_LIFESPAN = 1000;
+    static constexpr char PATHWAY_SYMBOL = '.';
 
 private:
     char map[N][N];
