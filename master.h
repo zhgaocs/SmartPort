@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "harbor.h" // include <vector>
+#include "harbor.h"
 #include "utils.h"
 
 class Master
@@ -23,13 +23,17 @@ public:
     void init();
     void update();
     void assignTasks();
-    void control();
+    void controlOutput() const;
 
 private:
-    std::vector<std::pair<int, int>>
-    findPath(int src_x, int src_y, int dst_x, int dst_y);
+    /// @return reverse path: dst->src
+    std::vector<std::pair<int, int>> findPath(int src_x, int src_y, int dst_x, int dst_y); // return reverse path: dst->src
 
-private:
+    /// @param path dst->src
+    /// @return directions src->dst, but the vector elements are reversed
+    static std::vector<int> path2Directions(const std::vector<std::pair<int, int>> &path);
+
+public:
     static constexpr int N = 200;
     static constexpr int ROBOT_NUM = 10;
     static constexpr int BERTH_NUM = 10;
@@ -41,9 +45,23 @@ private:
     Robot robots[ROBOT_NUM];
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
-    std::pair<int, int> tasks[ROBOT_NUM]; // <items[], cost>
-    std::vector<std::pair<int, int>> paths[ROBOT_NUM];
+    bool has_tasks[ROBOT_NUM]; // false represents no tasks
+    std::vector<int> paths[ROBOT_NUM];
     std::vector<Item> items;
 };
+
+/* -------------------------------------used in findPath-------------------------------------- */
+namespace std
+{
+    template <>
+    struct hash<std::pair<int, int>>
+    {
+        size_t operator()(const std::pair<int, int> &p) const
+        {
+            return p.first * Master::N + p.second;
+        }
+    };
+}
+/* -------------------------------------used in findPath-------------------------------------- */
 
 #endif
