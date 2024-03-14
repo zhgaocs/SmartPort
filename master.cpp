@@ -2,8 +2,8 @@
 
 Master::Master()
 {
-    std::for_each(tasks, tasks + ROBOT_NUM, [](std::pair<int, int> &p)
-                  { p.first = -1; });
+    std::for_each(has_tasks, has_tasks + ROBOT_NUM, [](bool b)
+                  { b = false; });
 }
 
 void Master::init()
@@ -38,11 +38,11 @@ void Master::update()
     std::cin >> frame_num >> current_money;
 
     /* old item */
-    std::for_each(items.begin(), items.end(), [](Item &e)
-                  { e.life_span -= 1; });
+    std::for_each(items.begin(), items.end(), [](Item &item)
+                  { item.life_span -= 1; });
     items.erase(std::remove_if(items.begin(), items.end(),
-                               [](const Item &e)
-                               { return e.life_span == 0; }),
+                               [](const Item &item)
+                               { return item.life_span == 0; }),
                 items.end());
 
     /* new item */
@@ -88,74 +88,78 @@ void Master::assignTasks()
 
     for (int i = 0; i < ROBOT_NUM; ++i)
     {
-        if (!robots[i].has_item && robots[i].status && tasks[i].first == -1)
+        if (robots[i].status)
         {
-            for (int j = 0; j < items.size(); ++j)
+            if (!has_tasks[i]) // no tasks
             {
-                IMPair pair = std::make_pair(j, Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y));
-
-                if (queue.size() < nearest_num)
-                    queue.push(pair);
-                else if (pair.second < queue.top().second)
+                if (!robots[i].has_item) // no items - select item
                 {
-                    queue.pop();
-                    queue.push(pair);
+                    for (int j = 0; j < items.size(); ++j)
+                    {
+                        IMPair pair = std::make_pair(j, Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y));
+
+                        if (queue.size() < nearest_num)
+                            queue.push(pair);
+                        else if (pair.second < queue.top().second)
+                        {
+                            queue.pop();
+                            queue.push(pair);
+                        }
+                    }
+
+                    int closest_idx, current_dist, min_dist = INT_MAX;
+                    IMPair pair;
+
+                    while (!queue.empty())
+                    {
+                        pair = queue.top();
+
+                        path = findPath(robots[i].x, robots[i].y, items[pair.first].x, items[pair.first].y);
+
+                        if ((current_dist = path.size()) && current_dist < min_dist && current_dist - 1 < items[pair.first].life_span) // accessible
+                        {
+                            closest_idx = pair.first;
+                            min_dist = current_dist;
+                            shortest_path = path;
+                        }
+                        queue.pop();
+                    }
+
+                    if (INT_MAX != min_dist) // accessible
+                    {
+                        has_tasks[i] = true;
+                        paths[i] = path2Directions(shortest_path);
+                        items.erase(items.begin() + closest_idx);
+                    }
                 }
             }
-
-            int closest_idx, current_dist, min_dist = INT_MAX;
-            IMPair pair;
-
-            while (!queue.empty())
+            else // has tasks
             {
-                pair = queue.top();
-
-                path = findPath(robots[i].x, robots[i].y, items[pair.first].x, items[pair.first].y);
-
-                if ((current_dist = path.size()) && current_dist < min_dist) // accessible
+                if (!robots[i].has_item) // no items - on the way
+                    ;                    // nothing to do
+                else                     // has item, select berth
                 {
-                    closest_idx = pair.first;
-                    min_dist = current_dist;
-                    shortest_path = path;
                 }
-                queue.pop();
-            }
-
-            if(INT_MAX != min_dist) // accessible
-            {
-                tasks[i].first = closest_idx;
-                tasks[i].second = min_dist;
-                paths[i] = shortest_path;
-            }
-            else // not accessible
-            {
-                // tasks[i].first = -1;
             }
         }
     }
 }
 
-void Master::control()
+void Master::controlOutput() const
 {
-    // TODO
-}
-
-/* -------------------------------------used in findPath-------------------------------------- */
-namespace std
-{
-    template <>
-    struct hash<std::pair<int, int>>
+    /* Robot */
+    for (int i = 0; i < ROBOT_NUM; ++i)
     {
-        size_t operator()(const std::pair<int, int> &p) const
+        if (has_tasks[i])
         {
-            auto h1 = std::hash<int>{}(p.first);
-            auto h2 = std::hash<int>{}(p.second);
-
-            return h1 ^ (h2 << 1);
+            // TODO
         }
-    };
+    }
+
+    /* Ship */
+    // TODO
+    std::cout << "OK" << std::flush;
 }
-/* -------------------------------------used in findPath-------------------------------------- */
 
 std::vector<std::pair<int, int>> Master::findPath(int src_x, int src_y, int dst_x, int dst_y)
 {
@@ -173,7 +177,9 @@ std::vector<std::pair<int, int>> Master::findPath(int src_x, int src_y, int dst_
         Node *prev;
 
         Node(int x, int y)
-            : x(x), y(y), g(INT_MAX), h(0), f(INT_MAX), prev(nullptr) {}
+            : x(x), y(y), g(INT_MAX), h(0), f(INT_MAX), prev(nullptr)
+        {
+        }
     };
 
     struct CompareNode
@@ -269,4 +275,20 @@ std::vector<std::pair<int, int>> Master::findPath(int src_x, int src_y, int dst_
                   { delete nodeptr; });
 
     return path;
+}
+
+std::vector<int> Master::path2Directions(const std::vector<std::pair<int, int>> &path)
+{
+    // path.empty() == false
+    int tmp;
+    std::vector<int> vec_d(path.size() - 1);
+
+    for (int i = 0; i < path.size() - 1; ++i)
+    {
+        if ((tmp = path[i + 1].first - path[i].first)) // x
+            vec_d[i] = tmp > 0 ? 2 : 3;
+        else // y
+            vec_d[i] = tmp > 0 ? 1 : 0;
+    }
+    return vec_d;
 }
