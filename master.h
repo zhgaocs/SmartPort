@@ -38,7 +38,6 @@ public:
     static constexpr int ROBOT_NUM = 10;
     static constexpr int BERTH_NUM = 10;
     static constexpr int BOAT_NUM = 5;
-    static constexpr int ITEM_MAX_LIFESPAN = 1000;
     static constexpr char PATHWAY_SYMBOL = '.';
 
 private:
