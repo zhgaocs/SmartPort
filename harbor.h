@@ -28,16 +28,17 @@ struct Berth
 
 struct Boat
 {
-    int target_berth = -1; /* -1 - virtual point */
-    int status = 1;        /* 0 - moving, 1 - running, 2 - waiting */
-    int capacity;          /* 1 <= capacity <= 1000*/
+    int target_berth = -1;    /* -1 - virtual point */
+    int status = 1;           /* 0 - moving, 1 - running, 2 - waiting */
+    static int boat_capacity; /* 1 <= capacity <= 1000*/
 };
 
 struct Item /* goods */
 {
     int x, y;
     int value;     /* value <= 1000 */
-    int life_span; /* life_span <= 1000 */
+    int life_span = MAX_LIFESPAN; /* life_span <= 1000 */
+    static constexpr int MAX_LIFESPAN = 1000;
 };
 
 #endif
