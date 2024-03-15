@@ -1,5 +1,4 @@
 # 1. 仓库分支管理规则
-
 1. **main** 和 **dev** 分支由我负责维护，其他人禁止向这两个分支提交任何更改
 2. **dev** 分支是最新的开发分支，所有新的代码开发都应参考此分支
 3. **test** 分支用于调试，不建议使用
@@ -9,12 +8,10 @@
 # 2. 代码结构说明
 
 ## 2.1 harbor.h
-
 "harbor"（港湾）：此头文件定义了机器人、泊位、船只、货物的结构体
 
 ## 2.2 utils.h
-
-此头文件包含以下两个函数：
+"utilities"（实用程序）：此头文件包含以下两个函数：
 
 ```C++
 unsigned int Absolute(int x); // 计算x的绝对值
@@ -25,7 +22,6 @@ unsigned int Manhattan(int x1, int y1, int x2, int y2); // 计算(x1, y1)与(x2,
 ```
 
 ## 2.3 master.h
-
 "master"（主人，管理员）：此类具有全局视角，可以在任何时刻获取港口的所有信息
 
 ### 2.3.1 静态成员变量
@@ -38,7 +34,7 @@ static constexpr int BOAT_NUM = 5; // 船只数量
 static constexpr int ITEM_MAX_LIFESPAN = 1000; // 货物的最大生存期
 ```
 
-+ 注意，`BOAT_NUM` 和 `ITEM_MAX_LIFESPAN` 是我自定义的两个常量，以增加程序的通用性
+*注意，`BOAT_NUM` 和 `ITEM_MAX_LIFESPAN` 是我自定义的两个常量，以增加程序的通用性*
 
 ### 2.3.2 非静态成员变量
 
@@ -54,7 +50,7 @@ std::vector<Item> items; // 港口所有货物，不使用id，而是使用下�
 bool has_tasks[ROBOT_NUM]; // 对应的机器人是否有任务
 ```
 
-*需要这个数组的原因是：`has_items == 0 && status == 1`时机器人有可能在赶去货物的路上，也有可能什么也不敢，需要此数组加以区分*
+*需要这个数组的原因是：`has_items == 0 && status == 1`时机器人有可能在赶去货物的路上，也有可能什么也不干，需要此数组加以区分*
 
 ```C++
 std::vector<int> paths[ROBOT_NUM]; // 每个机器人应走的路径
@@ -104,3 +100,18 @@ std::vector<std::pair<int, int>> findPath(int src_x, int src_y, int dst_x, int d
 // 将逆置的路径转换为方向（方向也逆置了，第一个方向为最后一个元素）
 static std::vector<int> path2Directions(const std::vector<std::pair<int, int>> &path);
 ```
+
+# 3. 策略
+
+## 3.1 机器人找货物
++ 原则：就近
++ 实现：
+  + 设定一个阈值*k*
+  + 先在所有货物中搜寻与机器人**曼哈顿距离**最近的*k*个货物
+  + 再从这*k*个（至多）中选出实际距离最近的货物
+ 
+## 3.2 机器人找泊位
++ 原则：就近
+
+## 3.3 船只找泊位
++ 原则：就近
