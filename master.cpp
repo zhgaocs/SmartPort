@@ -2,8 +2,7 @@
 
 void Master::init()
 {
-    int berth_id, boat_capacity;
-    char ok_cstr[3];
+    char ok_str[3];
 
     /* init map */
     for (int i = 0; i < N; ++i)
@@ -13,24 +12,24 @@ void Master::init()
     /* init berth */
     for (int i = 0; i < BERTH_NUM; ++i)
     {
+        int berth_id;
         std::cin >> berth_id;
         std::cin >> berths[berth_id].x >> berths[berth_id].y >> berths[berth_id].transport_time >> berths[berth_id].loading_speed;
     }
 
     /* boat capacity */
-    std::cin >> boat_capacity;
-    std::for_each(boats, boats + BOAT_NUM, [boat_capacity](Boat &b)
-                  { b.capacity = boat_capacity; });
+    std::cin >> Boat::boat_capacity;
 
     /* OK */
-    std::cin >> ok_cstr;
+    std::cin >> ok_str;
     std::cout << "OK" << std::flush;
 }
 
 void Master::update()
 {
-    int frame_num, current_money; /* frame_num increase from 1 */
-    char ok_cstr[3];
+    char ok_str[3];
+    int frame_num, current_money, new_item_cnt; /* frame_num increase from 1 */
+    Item item;
 
     std::cin >> frame_num >> current_money;
 
@@ -43,13 +42,10 @@ void Master::update()
                 items.end());
 
     /* new item */
-    int new_item_cnt;
     std::cin >> new_item_cnt;
     for (int i = 0; i < new_item_cnt; ++i)
     {
-        Item item;
         std::cin >> item.x >> item.y >> item.value;
-        item.life_span = ITEM_MAX_LIFESPAN;
         items.push_back(item);
     }
 
@@ -62,7 +58,7 @@ void Master::update()
         std::cin >> boats[i].status >> boats[i].target_berth;
 
     /* OK */
-    std::cin >> ok_cstr;
+    std::cin >> ok_str;
 }
 
 void Master::assignTasks()
@@ -128,47 +124,32 @@ void Master::assignTasks()
                     items.erase(items.begin() + closest_idx);
                 }
             }
-            else // nothing to do
-            {
-            }
         }
-        else // has task
+        else if (robots[i].has_item && robots[i].path.empty()) // find berth
         {
-            if (!robots[i].has_item) // no items, on the way to get the item
-            {
-            }
-            else // has item
-            {
-                if (robots[i].path.empty()) // find berth
-                {
-                    int current_dist, min_dist = INT_MAX;
-                    std::vector<std::pair<int, int>> vec_p, path, shortest_path;
+            int current_dist, min_dist = INT_MAX;
+            std::vector<std::pair<int, int>> vec_p, path, shortest_path;
 
-                    for (int j = 0; j < BERTH_NUM; ++j)
+            for (int j = 0; j < BERTH_NUM; ++j)
+            {
+                vec_p = findBerthPoint(berths[j].x, berths[j].y);
+
+                for (int k = 0; k < vec_p.size(); ++k) // 0 <= vecp.size() <= 12
+                {
+                    path = findPath(robots[i].x, robots[i].y, vec_p[k].first, vec_p[k].second);
+
+                    if ((current_dist = path.size()) && current_dist < min_dist)
                     {
-                        vec_p = findBerthPoint(berths[j].x, berths[j].y);
-
-                        for (int k = 0; k < vec_p.size(); ++k) // 0 <= vecp.size() <= 12
-                        {
-                            path = findPath(robots[i].x, robots[i].y, vec_p[k].first, vec_p[k].second);
-
-                            if ((current_dist = path.size()) && current_dist < min_dist)
-                            {
-                                min_dist = current_dist;
-                                shortest_path = path;
-                            }
-                        }
+                        min_dist = current_dist;
+                        shortest_path = path;
                     }
-
-                    if (min_dist != INT_MAX)
-                        robots[i].path = path2Directions(shortest_path);
-                    else // robots[i] cannot find berth
-                        ;
-                }
-                else // move to berth
-                {
                 }
             }
+
+            if (min_dist != INT_MAX)
+                robots[i].path = path2Directions(shortest_path);
+            else // robots[i] cannot find berth
+                ;
         }
     }
 
@@ -197,12 +178,12 @@ void Master::control()
 
                 if (robots[i].has_item) // pull
                 {
-                    // money
-                    // item_cnt
                     std::cout << "pull" << ' ' << i << '\n';
 
                     robots[i].has_task = false;
                     robots[i].path.pop_back();
+                    // items_cnt
+                    // money
                 }
                 else // get
                     std::cout << "get" << ' ' << i << '\n';
