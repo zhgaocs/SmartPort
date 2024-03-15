@@ -8,7 +8,6 @@
 #include <set>
 #include <unordered_set>
 #include <utility>
-#include <vector>
 
 #include "harbor.h"
 #include "utils.h"
@@ -16,21 +15,21 @@
 class Master
 {
 public:
-    Master();
+    Master() = default;
     ~Master() = default;
 
 public:
     void init();
     void update();
     void assignTasks();
-    void controlOutput() const;
+    void control();
 
 private:
     /// @return reverse path: dst->src
     std::vector<std::pair<int, int>> findPath(int src_x, int src_y, int dst_x, int dst_y) const; // return reverse path: dst->src
     std::vector<std::pair<int, int>> findBerthPoint(int berth_x, int berth_y) const;
 
-    /// @param path dst->src
+    /// @param path dst->src, and path must not be empty
     /// @return directions src->dst, but the vector elements are reversed
     static std::vector<int> path2Directions(const std::vector<std::pair<int, int>> &path);
 
@@ -47,8 +46,6 @@ private:
     Robot robots[ROBOT_NUM];
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
-    bool has_tasks[ROBOT_NUM]; // false represents no tasks
-    std::vector<int> paths[ROBOT_NUM];
     std::vector<Item> items;
 };
 
