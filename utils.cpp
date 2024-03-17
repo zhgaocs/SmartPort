@@ -73,7 +73,8 @@ std::vector<std::pair<int, int>> FindPath(const char (&map)[N][N], int src_x, in
             int nx = current->x + DX[i];
             int ny = current->y + DY[i];
 
-            if (nx < 0 || ny < 0 || nx + 1 > N || ny + 1 > N || map[nx][ny] != PATHWAY_SYMBOL || map[nx][ny] != BERTH_SYMBOL)
+            if (nx < 0 || ny < 0 || nx + 1 > N || ny + 1 > N ||
+                (map[nx][ny] != PATHWAY_SYMBOL && map[nx][ny] != BERTH_SYMBOL))
                 continue;
 
             if (close_set.end() != close_set.find(std::make_pair(nx, ny))) // if neighbor is in close_set
