@@ -6,6 +6,7 @@
 /* map */
 constexpr int N = 200;
 constexpr char PATHWAY_SYMBOL = '.';
+constexpr char BERTH_SYMBOL = 'B';
 constexpr int BERTH_SIZE = 4; // berth: 4*4
 
 /* settings */
