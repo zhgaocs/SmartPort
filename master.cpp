@@ -142,18 +142,13 @@ void Master::assignTasks()
 
             for (int j = 0; j < BERTH_NUM; ++j)
             {
-                bp_set = findBerthPoint(j);
+                path = FindPath(map, robots[i].x, robots[i].y, berths[i].x, berths[i].y);
 
-                for (const auto &bp : bp_set)
+                if ((current_dist = path.size()) && current_dist < min_dist)
                 {
-                    path = FindPath(map, robots[i].x, robots[i].y, bp.first, bp.second);
-
-                    if ((current_dist = path.size()) && current_dist < min_dist)
-                    {
-                        berth_idx = j;
-                        min_dist = current_dist;
-                        shortest_path = path;
-                    }
+                    berth_idx = j;
+                    min_dist = current_dist;
+                    shortest_path = path;
                 }
             }
 
@@ -311,36 +306,4 @@ void Master::run()
     update();
     assignTasks();
     control();
-}
-
-std::unordered_set<std::pair<int, int>> Master::findBerthPoint(int berth_idx)
-{
-    int x = berths[berth_idx].x, y = berths[berth_idx].y;
-    std::unordered_set<std::pair<int, int>> bp_set;
-
-    // berth above
-    if (x)
-        for (int i = 0; i < BERTH_SIZE; ++i)
-            if (PATHWAY_SYMBOL == map[x - 1][y + i])
-                bp_set.insert(std::make_pair(x, y + i));
-
-    // berth below
-    if (x + 1 != N)
-        for (int i = 0; i < BERTH_SIZE; ++i)
-            if (PATHWAY_SYMBOL == map[x + BERTH_SIZE][y + i])
-                bp_set.insert(std::make_pair(x + BERTH_SIZE - 1, y + i));
-
-    // berth left
-    if (y)
-        for (int i = 0; i < BERTH_SIZE; ++i)
-            if (PATHWAY_SYMBOL == map[x + i][y - 1])
-                bp_set.insert(std::make_pair(x + i, y));
-
-    // berth right
-    if (y + 1 != N)
-        for (int i = 0; i < BERTH_SIZE; ++i)
-            if (PATHWAY_SYMBOL == map[x + i][y + BERTH_SIZE])
-                bp_set.insert(std::make_pair(x + i, y + BERTH_SIZE - 1));
-
-    return bp_set;
 }

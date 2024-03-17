@@ -22,9 +22,6 @@ private:
     void assignTasks();
     void control();
 
-private:    
-    std::unordered_set<std::pair<int, int>> findBerthPoint(int berth_idx);
-
 private:
     char map[N][N];
     Robot robots[ROBOT_NUM];
