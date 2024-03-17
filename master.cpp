@@ -92,48 +92,46 @@ void Master::assignTasks()
     {
         if (!robots[i].has_task) // no tasks
         {
-            if (!robots[i].has_item) // no items, select item
+            /* no items, select item */
+            for (int j = 0; j < items.size(); ++j)
             {
-                for (int j = 0; j < items.size(); ++j)
+                IMPair pair = std::make_pair(j, Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y));
+
+                if (queue.size() < nearest_num)
+                    queue.push(pair);
+                else if (pair.second < queue.top().second)
                 {
-                    IMPair pair = std::make_pair(j, Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y));
-
-                    if (queue.size() < nearest_num)
-                        queue.push(pair);
-                    else if (pair.second < queue.top().second)
-                    {
-                        queue.pop();
-                        queue.push(pair);
-                    }
-                }
-
-                int item_idx, current_dist, min_dist = INTEGER_MAX;
-                IMPair pair;
-
-                while (!queue.empty())
-                {
-                    pair = queue.top();
-
-                    path = FindPath(map, robots[i].x, robots[i].y, items[pair.first].x, items[pair.first].y);
-
-                    if ((current_dist = path.size()) && current_dist < min_dist && current_dist - 1 < items[pair.first].life_span) // accessible
-                    {
-                        item_idx = pair.first;
-                        min_dist = current_dist;
-                        shortest_path = path;
-                    }
                     queue.pop();
+                    queue.push(pair);
                 }
+            }
 
-                if (INTEGER_MAX != min_dist) // accessible
+            int item_idx, current_dist, min_dist = INTEGER_MAX;
+            IMPair pair;
+
+            while (!queue.empty())
+            {
+                pair = queue.top();
+
+                path = FindPath(map, robots[i].x, robots[i].y, items[pair.first].x, items[pair.first].y);
+
+                if ((current_dist = path.size()) && current_dist < min_dist && current_dist - 1 < items[pair.first].life_span) // accessible
                 {
-                    Item item = items[item_idx];
-                    robots[i].has_task = 1;
-                    robots[i].target_value = item.value;
-                    robots[i].target_lifespan = item.life_span;
-                    robots[i].path = Path2Directions(shortest_path);
-                    items.erase(items.begin() + item_idx);
+                    item_idx = pair.first;
+                    min_dist = current_dist;
+                    shortest_path = path;
                 }
+                queue.pop();
+            }
+
+            if (INTEGER_MAX != min_dist) // accessible
+            {
+                Item item = items[item_idx];
+                robots[i].has_task = 1;
+                robots[i].target_value = item.value;
+                robots[i].target_lifespan = item.life_span;
+                robots[i].path = Path2Directions(shortest_path);
+                items.erase(items.begin() + item_idx);
             }
         }
         else if (robots[i].has_item && robots[i].path.empty()) // find berth
@@ -146,7 +144,7 @@ void Master::assignTasks()
             {
                 bp_set = findBerthPoint(j);
 
-                for (const auto& bp : bp_set)
+                for (const auto &bp : bp_set)
                 {
                     path = FindPath(map, robots[i].x, robots[i].y, bp.first, bp.second);
 
@@ -256,7 +254,9 @@ void Master::control()
     /* Robot */
     for (int i = 0; i < ROBOT_NUM; ++i)
     {
-        if (robots[i].status && robots[i].has_task)
+        if (!robots[i].status)
+            robots[i].has_task = false;
+        else if (robots[i].has_task)
         {
             if (!robots[i].has_item) // on the way
             {
