@@ -3,6 +3,7 @@
 void Master::init()
 {
     char ok_str[3];
+    int boat_capacity;
 
     /* init map */
     for (int i = 0; i < N; ++i)
@@ -18,7 +19,9 @@ void Master::init()
     }
 
     /* boat capacity */
-    std::cin >> Boat::boat_capacity;
+    std::cin >> boat_capacity;
+    std::for_each(boats, boats + BOAT_NUM, [boat_capacity](Boat &b)
+                  { b.capacity = boat_capacity; });
 
     /* OK */
     std::cin >> ok_str;
@@ -28,7 +31,7 @@ void Master::init()
 void Master::update()
 {
     char ok_str[3];
-    int frame_num, current_money, new_item_cnt; /* frame_num increase from 1 */
+    int frame_num, current_money, new_items_cnt; /* frame_num increase from 1 */
     Item item;
 
     std::cin >> frame_num >> current_money;
@@ -42,8 +45,8 @@ void Master::update()
                 items.end());
 
     /* new item */
-    std::cin >> new_item_cnt;
-    for (int i = 0; i < new_item_cnt; ++i)
+    std::cin >> new_items_cnt;
+    for (int i = 0; i < new_items_cnt; ++i)
     {
         std::cin >> item.x >> item.y >> item.value;
         items.push_back(item);
@@ -55,7 +58,12 @@ void Master::update()
 
     /* boat */
     for (int i = 0; i < BOAT_NUM; ++i)
-        std::cin >> boats[i].status >> boats[i].target_berth;
+    {
+        std::cin >> boats[i].status >> boats[i].pos;
+
+        if (boats[i].pos != -1)
+            berths[boats[i].pos].boat_index = i;
+    }
 
     /* OK */
     std::cin >> ok_str;
@@ -99,63 +107,146 @@ void Master::assignTasks()
                     }
                 }
 
-                int closest_idx, current_dist, min_dist = INT_MAX;
+                int item_idx, current_dist, min_dist = INTEGER_MAX;
                 IMPair pair;
 
                 while (!queue.empty())
                 {
                     pair = queue.top();
 
-                    path = findPath(robots[i].x, robots[i].y, items[pair.first].x, items[pair.first].y);
+                    path = FindPath(map, robots[i].x, robots[i].y, items[pair.first].x, items[pair.first].y);
 
                     if ((current_dist = path.size()) && current_dist < min_dist && current_dist - 1 < items[pair.first].life_span) // accessible
                     {
-                        closest_idx = pair.first;
+                        item_idx = pair.first;
                         min_dist = current_dist;
                         shortest_path = path;
                     }
                     queue.pop();
                 }
 
-                if (INT_MAX != min_dist) // accessible
+                if (INTEGER_MAX != min_dist) // accessible
                 {
+                    Item item = items[item_idx];
                     robots[i].has_task = 1;
-                    robots[i].path = path2Directions(shortest_path);
-                    items.erase(items.begin() + closest_idx);
+                    robots[i].target_value = item.value;
+                    robots[i].target_lifespan = item.life_span;
+                    robots[i].path = Path2Directions(shortest_path);
+                    items.erase(items.begin() + item_idx);
                 }
             }
         }
         else if (robots[i].has_item && robots[i].path.empty()) // find berth
         {
-            int current_dist, min_dist = INT_MAX;
+            int berth_idx, current_dist, min_dist = INTEGER_MAX;
             std::vector<std::pair<int, int>> vec_p, path, shortest_path;
 
             for (int j = 0; j < BERTH_NUM; ++j)
             {
-                vec_p = findBerthPoint(berths[j].x, berths[j].y);
+                vec_p = findBerthPoint(j);
 
-                for (int k = 0; k < vec_p.size(); ++k) // 0 <= vecp.size() <= 12
+                for (int k = 0; k < vec_p.size(); ++k)
                 {
-                    path = findPath(robots[i].x, robots[i].y, vec_p[k].first, vec_p[k].second);
+                    path = FindPath(map, robots[i].x, robots[i].y, vec_p[k].first, vec_p[k].second);
 
                     if ((current_dist = path.size()) && current_dist < min_dist)
                     {
+                        berth_idx = j;
                         min_dist = current_dist;
                         shortest_path = path;
                     }
                 }
             }
 
-            if (min_dist != INT_MAX)
-                robots[i].path = path2Directions(shortest_path);
-            else // robots[i] cannot find berth
-                ;
+            if (INTEGER_MAX != min_dist)
+            {
+                robots[i].target_berth = berth_idx;
+                robots[i].path = Path2Directions(shortest_path);
+            }
+            // robots[i] cannot find berth ???
         }
     }
 
-    /* Ship */
-    for (int i = 0; i < BOAT_NUM && boats[i].status; ++i)
+    /* Boat */
+    for (int i = 0; i < BOAT_NUM; ++i)
     {
+        if (0 == boats[i].status) // on the way to virtual point or berth
+        {
+            if (boats[i].target_pos != -2 && -1 == boats[i].target_pos)
+                boats[i].target_pos = -2;
+        }
+        else if (1 == boats[i].status)
+        {
+            if (-1 == boats[i].pos && -2 == boats[i].target_pos) // virtual point, go to one berth
+            {
+                int berth_idx, w, min_w = INTEGER_MAX;
+
+                for (int j = 0; j < BERTH_NUM; ++j)
+                {
+                    if (-1 == berths[j].boat_index) // no boats in berth
+                        w = berths[j].transport_time - berths[j].loading_speed - berths[j].piled_items.size() - berths[j].total_value;
+                    else
+                    {
+                        bool will_two_boats = false;
+
+                        for (int k = 0; k < BOAT_NUM; ++k)
+                        {
+                            if (j == boats[k].target_pos)
+                            {
+                                will_two_boats = true;
+                                break;
+                            }
+                        }
+
+                        if (will_two_boats)
+                            continue;
+
+                        /* may have two boats */
+                        int boat_capacity = boats[berths[j].boat_index].capacity,
+                            rest_items_cnt = berths[j].piled_items.size() - boat_capacity;
+
+                        if (rest_items_cnt <= 0) // one boat can load it all
+                            w = berths[j].transport_time - berths[j].loading_speed;
+                        else // may need two boats
+                        {
+                            int rest_value = std::accumulate(berths[j].piled_items.cbegin() + boat_capacity, berths[j].piled_items.cend() + rest_items_cnt, 0);
+                            w = berths[j].transport_time - berths[j].loading_speed - rest_items_cnt - rest_value;
+                        }
+                    }
+
+                    if (w < min_w)
+                    {
+                        min_w = w;
+                        berth_idx = j;
+                    }
+                }
+
+                if (min_w != INTEGER_MAX)
+                    boats[i].target_pos = berth_idx;
+            }
+            else // in berth, loading
+            {
+                if (!boats[i].capacity) // full,  go to virtual point
+                {
+                    boats[i].target_pos = -1;
+                    berths[boats[i].pos].boat_index = -1;
+                }
+                else // not full
+                {
+                    Berth &berth = berths[boats[i].pos];
+
+                    int min = Min(boats[i].capacity, berth.loading_speed, berth.piled_items.size());
+                    int sub_value = std::accumulate(berth.piled_items.cbegin(), berth.piled_items.cbegin() + min, 0);
+
+                    boats[i].capacity -= min;
+                    berth.total_value -= sub_value;
+                    berth.piled_items.erase(berth.piled_items.begin(), berth.piled_items.begin() + min);
+                }
+            }
+        }
+        else
+        {
+        }
     }
 }
 
@@ -166,196 +257,89 @@ void Master::control()
     {
         if (robots[i].status && robots[i].has_task)
         {
-            if (robots[i].path.size() > 1)
+            if (!robots[i].has_item) // on the way
             {
-                // collision detect
-                std::cout << "move" << ' ' << i << ' ' << robots[i].path.back() << '\n';
-                robots[i].path.pop_back();
+                if (robots[i].target_lifespan < robots[i].path.size())
+                {
+                    robots[i].has_task = false;
+                    continue;
+                }
+                else
+                    --robots[i].target_lifespan;
             }
-            else
-            {
-                std::cout << "move" << ' ' << i << ' ' << robots[i].path.front() << '\n';
 
+            std::cout << "move " << i << ' ' << robots[i].path.back() << '\n';
+            robots[i].path.pop_back();
+
+            if (robots[i].path.empty())
+            {
                 if (robots[i].has_item) // pull
                 {
-                    std::cout << "pull" << ' ' << i << '\n';
+                    std::cout << "pull " << i << '\n';
 
+                    berths[robots[i].target_berth].piled_items.push_back(robots[i].target_value);
+                    berths[robots[i].target_berth].total_value += robots[i].target_value;
                     robots[i].has_task = false;
-                    robots[i].path.pop_back();
-                    // items_cnt
-                    // money
                 }
                 else // get
-                    std::cout << "get" << ' ' << i << '\n';
-
-                robots[i].path.pop_back();
+                {
+                    std::cout << "get " << i << '\n';
+                    robots[i].has_item = true;
+                }
             }
         }
     }
 
-    /* Ship */
+    /* Boat */
+    for (int i = 0; i < BOAT_NUM && 1 == boats[i].status; ++i)
+    {
+        if (boats[i].pos != boats[i].target_pos)
+        {
+            if (-1 == boats[i].pos) // go to berth
+                std::cout << "ship " << i << ' ' << boats[i].target_pos << '\n';
+            else // go to virtual point
+                std::cout << "go" << i << '\n';
+        }
+    }
+
     std::cout << "OK" << std::flush;
 }
 
-std::vector<std::pair<int, int>> Master::findPath(int src_x, int src_y, int dst_x, int dst_y) const
+void Master::run()
 {
-    /* ------------------------------------------------------------------------------------------- */
-    static constexpr int NUM_OF_DIRECTIONS = 4;
-    static constexpr int DX[NUM_OF_DIRECTIONS] = {-1, 1, 0, 0};
-    static constexpr int DY[NUM_OF_DIRECTIONS] = {0, 0, -1, 1};
-    static constexpr int COST[NUM_OF_DIRECTIONS] = {1, 1, 1, 1};
-
-    struct Node
-    {
-        int x, y;
-        int g, h, f;
-        Node *prev;
-
-        Node(int x, int y)
-            : x(x), y(y), g(INT_MAX), h(0), f(INT_MAX), prev(nullptr)
-        {
-        }
-    };
-
-    struct CompareNode
-    {
-        bool operator()(const Node *lhs, const Node *rhs) const
-        {
-            return lhs->f < rhs->f;
-        }
-    };
-    /* ------------------------------------------------------------------------------------------- */
-
-    std::multiset<Node *, CompareNode> open_set;
-    std::unordered_set<std::pair<int, int>> close_set;
-    std::vector<Node *> close_vec; // used to store pointers that are new and are not in open_set
-    std::vector<std::pair<int, int>> path;
-
-    Node *start = new Node(src_x, src_y);
-    start->g = 0, start->h = Manhattan(src_x, src_y, dst_x, dst_y);
-    start->f = start->g + start->h;
-
-    open_set.insert(start);
-
-    while (!open_set.empty())
-    {
-        auto iter = open_set.begin();
-        Node *current = *iter;
-
-        // if current is destination, then the path has been found
-        if (current->x == dst_x && current->y == dst_y)
-        {
-            while (current)
-            {
-                path.push_back(std::make_pair(current->x, current->y));
-                current = current->prev;
-            }
-
-            std::for_each(open_set.begin(), open_set.end(), [](Node *node)
-                          { delete node; });
-
-            /* std::reverse(path.begin(), path.end()); */
-
-            break;
-        }
-
-        // move current from open_set to close_set
-        open_set.erase(iter);
-        close_vec.push_back(current);
-        close_set.insert(std::make_pair(current->x, current->y));
-
-        for (int i = 0; i < 4; ++i)
-        {
-            int nx = current->x + DX[i];
-            int ny = current->y + DY[i];
-
-            if (nx < 0 || ny < 0 || nx + 1 > N || ny + 1 > N || map[nx][ny] != PATHWAY_SYMBOL)
-                continue;
-
-            if (close_set.end() != close_set.find(std::make_pair(nx, ny))) // if neighbor is in close_set
-                continue;
-
-            auto iter = std::find_if(open_set.begin(), open_set.end(),
-                                     [nx, ny](Node *nodeptr)
-                                     {
-                                         return nx == nodeptr->x && ny == nodeptr->y;
-                                     });
-
-            int g = current->g + COST[i];
-            Node *neighbor = nullptr;
-
-            if (open_set.end() != iter) // in open_set
-            {
-                neighbor = *iter;
-                if (g < neighbor->g)
-                {
-                    neighbor->g = g;
-                    neighbor->f = g + neighbor->h;
-                    neighbor->prev = current;
-                }
-            }
-            else
-            {
-                neighbor = new Node(nx, ny);
-                neighbor->g = g, neighbor->h = Manhattan(nx, ny, dst_x, dst_y);
-                neighbor->f = neighbor->g + neighbor->h;
-                neighbor->prev = current;
-                open_set.insert(neighbor);
-            }
-        }
-    }
-
-    std::for_each(close_vec.begin(), close_vec.end(), [](Node *nodeptr)
-                  { delete nodeptr; });
-
-    return path;
+    update();
+    assignTasks();
+    control();
 }
 
-std::vector<std::pair<int, int>> Master::findBerthPoint(int berth_x, int berth_y) const
+std::vector<std::pair<int, int>> Master::findBerthPoint(int berth_idx)
 {
-    /*-----------------------------------------------------------------------------*/
-    static constexpr int BERTH_SIZE = 4; // 4 * 4
-    /*-----------------------------------------------------------------------------*/
+    int x = berths[berth_idx].x, y = berths[berth_idx].y;
     std::vector<std::pair<int, int>> vec_p;
 
     // berth above
-    if (berth_x)
+    if (x)
         for (int i = 0; i < BERTH_SIZE; ++i)
-            if (map[berth_x - 1][berth_y + i] == PATHWAY_SYMBOL)
-                vec_p.push_back(std::make_pair(berth_x, berth_y + i));
+            if (PATHWAY_SYMBOL == map[x - 1][y + i])
+                vec_p.push_back(std::make_pair(x, y + i));
 
     // berth below
-    if (berth_x + 1 != N)
+    if (x + 1 != N)
         for (int i = 0; i < BERTH_SIZE; ++i)
-            if (map[berth_x + BERTH_SIZE][berth_y + i] == PATHWAY_SYMBOL)
-                vec_p.push_back(std::make_pair(berth_x + BERTH_SIZE - 1, berth_y + i));
+            if (PATHWAY_SYMBOL == map[x + BERTH_SIZE][y + i])
+                vec_p.push_back(std::make_pair(x + BERTH_SIZE - 1, y + i));
 
     // berth left
-    if (berth_y)
+    if (y)
         for (int i = 0; i < BERTH_SIZE; ++i)
-            if (map[berth_x + i][berth_y - 1] == PATHWAY_SYMBOL)
-                vec_p.push_back(std::make_pair(berth_x + i, berth_y));
+            if (PATHWAY_SYMBOL == map[x + i][y - 1])
+                vec_p.push_back(std::make_pair(x + i, y));
 
     // berth right
-    if (berth_y + 1 != N)
+    if (y + 1 != N)
         for (int i = 0; i < BERTH_SIZE; ++i)
-            if (map[berth_x + i][berth_y + BERTH_SIZE] == PATHWAY_SYMBOL)
-                vec_p.push_back(std::make_pair(berth_x + i, berth_y + BERTH_SIZE - 1));
+            if (PATHWAY_SYMBOL == map[x + i][y + BERTH_SIZE])
+                vec_p.push_back(std::make_pair(x + i, y + BERTH_SIZE - 1));
 
     return vec_p;
-}
-
-std::vector<int> Master::path2Directions(const std::vector<std::pair<int, int>> &path)
-{
-    int tmp;
-    std::vector<int> vec_d(path.size() - 1);
-
-    for (int i = 0; i < path.size() - 1; ++i)
-    {
-        if ((tmp = path[i + 1].first - path[i].first)) // x
-            vec_d[i] = tmp > 0 ? 2 : 3;
-        else // y
-            vec_d[i] = tmp > 0 ? 1 : 0;
-    }
-    return vec_d;
 }

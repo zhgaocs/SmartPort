@@ -2,5 +2,11 @@
 
 int main()
 {
-    std::cout << sizeof(Master) << '\n';
+    Master master;
+    master.init();
+
+    for(int i = 0; i < 15000; ++i)
+    {
+        master.run();
+    }
 }
