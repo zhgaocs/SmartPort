@@ -6,18 +6,6 @@ int Min(int x, int y, int z)
     return tmp < z ? tmp : z;
 }
 
-namespace std
-{
-    template <>
-    struct hash<std::pair<int, int>>
-    {
-        size_t operator()(const std::pair<int, int> &p) const
-        {
-            return p.first * N + p.second;
-        }
-    };
-}
-
 std::vector<std::pair<int, int>> FindPath(const char (&map)[N][N], int src_x, int src_y, int dst_x, int dst_y)
 {
     /* ------------------------------------------------------------------------------------------- */
