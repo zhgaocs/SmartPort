@@ -23,7 +23,7 @@ private:
     void control();
 
 private:    
-    std::vector<std::pair<int, int>> findBerthPoint(int berth_idx);
+    std::unordered_set<std::pair<int, int>> findBerthPoint(int berth_idx);
 
 private:
     char map[N][N];

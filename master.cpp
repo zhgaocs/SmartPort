@@ -139,15 +139,16 @@ void Master::assignTasks()
         else if (robots[i].has_item && robots[i].path.empty()) // find berth
         {
             int berth_idx, current_dist, min_dist = INTEGER_MAX;
-            std::vector<std::pair<int, int>> vec_p, path, shortest_path;
+            std::unordered_set<std::pair<int, int>> bp_set;
+            std::vector<std::pair<int, int>> path, shortest_path;
 
             for (int j = 0; j < BERTH_NUM; ++j)
             {
-                vec_p = findBerthPoint(j);
+                bp_set = findBerthPoint(j);
 
-                for (int k = 0; k < vec_p.size(); ++k)
+                for (const auto& bp : bp_set)
                 {
-                    path = FindPath(map, robots[i].x, robots[i].y, vec_p[k].first, vec_p[k].second);
+                    path = FindPath(map, robots[i].x, robots[i].y, bp.first, bp.second);
 
                     if ((current_dist = path.size()) && current_dist < min_dist)
                     {
@@ -312,34 +313,34 @@ void Master::run()
     control();
 }
 
-std::vector<std::pair<int, int>> Master::findBerthPoint(int berth_idx)
+std::unordered_set<std::pair<int, int>> Master::findBerthPoint(int berth_idx)
 {
     int x = berths[berth_idx].x, y = berths[berth_idx].y;
-    std::vector<std::pair<int, int>> vec_p;
+    std::unordered_set<std::pair<int, int>> bp_set;
 
     // berth above
     if (x)
         for (int i = 0; i < BERTH_SIZE; ++i)
             if (PATHWAY_SYMBOL == map[x - 1][y + i])
-                vec_p.push_back(std::make_pair(x, y + i));
+                bp_set.insert(std::make_pair(x, y + i));
 
     // berth below
     if (x + 1 != N)
         for (int i = 0; i < BERTH_SIZE; ++i)
             if (PATHWAY_SYMBOL == map[x + BERTH_SIZE][y + i])
-                vec_p.push_back(std::make_pair(x + BERTH_SIZE - 1, y + i));
+                bp_set.insert(std::make_pair(x + BERTH_SIZE - 1, y + i));
 
     // berth left
     if (y)
         for (int i = 0; i < BERTH_SIZE; ++i)
             if (PATHWAY_SYMBOL == map[x + i][y - 1])
-                vec_p.push_back(std::make_pair(x + i, y));
+                bp_set.insert(std::make_pair(x + i, y));
 
     // berth right
     if (y + 1 != N)
         for (int i = 0; i < BERTH_SIZE; ++i)
             if (PATHWAY_SYMBOL == map[x + i][y + BERTH_SIZE])
-                vec_p.push_back(std::make_pair(x + i, y + BERTH_SIZE - 1));
+                bp_set.insert(std::make_pair(x + i, y + BERTH_SIZE - 1));
 
-    return vec_p;
+    return bp_set;
 }
