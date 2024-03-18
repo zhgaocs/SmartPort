@@ -178,7 +178,7 @@ void Master::assignTasks()
                 for (int j = 0; j < BERTH_NUM; ++j)
                 {
                     if (-1 == berths[j].boat_index) // no boats in berth
-                        w = berths[j].transport_time - berths[j].loading_speed - berths[j].piled_items.size() - berths[j].total_value;
+                        w = berths[j].transport_time - berths[j].loading_speed - berths[j].piled_values.size() - berths[j].total_value;
                     else
                     {
                         bool will_two_boats = false;
@@ -197,13 +197,13 @@ void Master::assignTasks()
 
                         /* may have two boats */
                         int boat_capacity = boats[berths[j].boat_index].capacity,
-                            rest_items_cnt = berths[j].piled_items.size() - boat_capacity;
+                            rest_items_cnt = berths[j].piled_values.size() - boat_capacity;
 
                         if (rest_items_cnt <= 0) // one boat can load it all
                             w = berths[j].transport_time - berths[j].loading_speed;
                         else // may need two boats
                         {
-                            int rest_value = std::accumulate(berths[j].piled_items.cbegin() + boat_capacity, berths[j].piled_items.cend() + rest_items_cnt, 0);
+                            int rest_value = std::accumulate(berths[j].piled_values.cbegin() + boat_capacity, berths[j].piled_values.cend() + rest_items_cnt, 0);
                             w = berths[j].transport_time - berths[j].loading_speed - rest_items_cnt - rest_value;
                         }
                     }
@@ -229,12 +229,12 @@ void Master::assignTasks()
                 {
                     Berth &berth = berths[boats[i].pos];
 
-                    int min = Min(boats[i].capacity, berth.loading_speed, berth.piled_items.size());
-                    int sub_value = std::accumulate(berth.piled_items.cbegin(), berth.piled_items.cbegin() + min, 0);
+                    int min = Min(boats[i].capacity, berth.loading_speed, berth.piled_values.size());
+                    int sub_value = std::accumulate(berth.piled_values.cbegin(), berth.piled_values.cbegin() + min, 0);
 
                     boats[i].capacity -= min;
                     berth.total_value -= sub_value;
-                    berth.piled_items.erase(berth.piled_items.begin(), berth.piled_items.begin() + min);
+                    berth.piled_values.erase(berth.piled_values.begin(), berth.piled_values.begin() + min);
                 }
             }
         }
@@ -273,7 +273,7 @@ void Master::control()
                 {
                     std::cout << "pull " << i << '\n';
 
-                    berths[robots[i].target_berth].piled_items.push_back(robots[i].target_value);
+                    berths[robots[i].target_berth].piled_values.push_back(robots[i].target_value);
                     berths[robots[i].target_berth].total_value += robots[i].target_value;
                     robots[i].has_task = false;
                 }
