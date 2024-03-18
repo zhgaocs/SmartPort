@@ -10,7 +10,7 @@
 class Master
 {
 public:
-    Master() = default;
+    Master();
     ~Master() = default;
 
 public:
@@ -27,7 +27,7 @@ private:
     Robot robots[ROBOT_NUM];
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
-    std::vector<Item> items;
+    std::deque<Item> items;
 };
 
 #endif
