@@ -1,5 +1,10 @@
 #include "master.h"
 
+Master::Master()
+{
+    std::ios::sync_with_stdio(false);
+}
+
 void Master::init()
 {
     char ok_str[3];
@@ -30,7 +35,7 @@ void Master::init()
 
 void Master::update()
 {
-    char ok_str[3];
+    static char ok_str[3];
     int frame_num, current_money, new_items_cnt; /* frame_num increase from 1 */
     Item item;
 
@@ -39,17 +44,19 @@ void Master::update()
     /* old item */
     std::for_each(items.begin(), items.end(), [](Item &item)
                   { item.life_span -= 1; });
-    items.erase(std::remove_if(items.begin(), items.end(),
-                               [](const Item &item)
-                               { return item.life_span == 0; }),
-                items.end());
+
+    auto it = std::find_if(items.begin(), items.end(), [](const Item &item)
+                           { return 0 == item.life_span; });
+
+    if (items.end() != it)
+        items.erase(it, items.end());
 
     /* new item */
     std::cin >> new_items_cnt;
     for (int i = 0; i < new_items_cnt; ++i)
     {
         std::cin >> item.x >> item.y >> item.value;
-        items.push_back(item);
+        items.push_front(item);
     }
 
     /* robot */
