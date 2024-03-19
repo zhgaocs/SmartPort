@@ -21,7 +21,8 @@ public:
 
 private:
     void update();
-    void assignTasks();
+    void assignRobots();
+    void assignBoats();
     void control();
 
 private:
@@ -29,9 +30,11 @@ private:
     Robot robots[ROBOT_NUM];
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
-    std::deque<Item> items;
+    
+    std::vector<Item> items;
+    std::vector<bool> item_selected;
 
-    std::ofstream out;
+    std::ofstream log;
 };
 
 #endif

@@ -6,7 +6,7 @@ Master::Master()
 {
     std::ios::sync_with_stdio(false);
 
-    out.open("log.txt");
+    log.open("log.txt");
 }
 
 void Master::init()
@@ -38,28 +38,23 @@ void Master::init()
 
 void Master::update()
 {
-    static char ok_str[3];
-    int frame_num, current_money, new_items_cnt, x, y, value; /* frame_num increase from 1 */
+    static int last_sync_id = 0;
 
-    std::cin >> frame_num >> current_money;
+    char ok_str[3];
+    int frame_id, frame_sub, current_money, new_items_cnt, x, y, value; /* frame_num increase from 1 */
 
-    out << "---------------------------------------------------" << frame_num
+    std::cin >> frame_id >> current_money;
+
+    log << "---------------------------------------------------" << frame_id
         << "---------------------------------------------------\n";
 
-    /* old item */
-    auto rit = std::find_if(items.rbegin(), items.rend(), [](const Item &item)
-                            { return item.life_span; });
-
-    if (items.rend() != rit)
-        std::for_each(items.begin(), rit.base(), [](Item &item)
-                      { --item.life_span; });
-
-    /* new item */
+    /* new items */
     std::cin >> new_items_cnt;
     for (int i = 0; i < new_items_cnt; ++i)
     {
         std::cin >> x >> y >> value;
-        items.emplace_front(x, y, value, ITEM_LIFESPAN_MAX, 0);
+        items.emplace_back(x, y, value, ITEM_LIFESPAN_MAX);
+        item_selected.emplace_back(false);
     }
 
     /* robot */
@@ -68,7 +63,7 @@ void Master::update()
         std::cin >> robots[i].has_item >> robots[i].x >> robots[i].y >> robots[i].status;
     }
 
-    out.flush();
+    log.flush();
 
     /* boat */
     for (int i = 0; i < BOAT_NUM; ++i)
@@ -79,17 +74,29 @@ void Master::update()
             berths[boats[i].pos].current_boat = i;
     }
 
+    /* all items */
+    frame_sub = frame_id - last_sync_id;
+
+    std::for_each(items.begin(), items.end(), [frame_sub](Item &item)
+                  { item.life_span -= frame_sub; });
+
+    if (1 != frame_sub)
+        last_sync_id = frame_sub;
+    else
+        ++last_sync_id;
+
     /* OK */
     std::cin >> ok_str;
 }
 
-void Master::assignTasks()
+void Master::assignRobots()
 {
-    /* ROBOT */
+    static int i = 0;
+
     int item_idx, berth_idx;
     std::vector<std::pair<int, int>> reverse_path;
 
-    for (int i = 0; i < ROBOT_NUM; ++i)
+    for (; i < ROBOT_NUM; ++i)
     {
         if (robots[i].status)
         {
@@ -97,18 +104,23 @@ void Master::assignTasks()
 
             if (!robots[i].task) // no tasks, select item
             {
-                for (int j = 0; j < items.size(); ++j)
+                for (int j = items.size() - 1; j >= 0; --j)
                 {
-                    if (items[j].life_span && !items[j].is_selected)
+                    if (items[j].life_span > 0)
                     {
-                        w = Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y);
-
-                        if (w < min_w)
+                        if (!item_selected[j]) // has not be selected by other robots
                         {
-                            min_w = w;
-                            item_idx = j;
+                            w = Manhattan(robots[i].x, robots[i].y, items[j].x, items[j].y);
+
+                            if (w < min_w)
+                            {
+                                min_w = w;
+                                item_idx = j;
+                            }
                         }
                     }
+                    else // with index increasing, life_span becomes bigger
+                        break;
                 }
 
                 auto start = std::chrono::high_resolution_clock::now();
@@ -120,17 +132,16 @@ void Master::assignTasks()
                 {
                     robots[i].task = 1;
                     robots[i].target_item = item_idx;
-                    items[item_idx].is_selected = 1;
+                    item_selected[item_idx] = true;
                     Path2Directions(reverse_path, robots[i].directions);
 
-                    out << "Robots#" << i << " find item succeed, spends " << elapsed.count() << "ms\n";
+                    log << "Robots#" << i << " find item succeed, spends " << elapsed.count() << "ms\n";
                 }
                 else
-                {
-                    out << "Robots#" << i << " find item failed, spends " << elapsed.count() << "ms\n";
-                }
+                    log << "Robots#" << i << " find item failed, spends " << elapsed.count() << "ms\n";
 
-                out.flush();
+                log.flush();
+                break;
             }
             else if (2 == robots[i].task && robots[i].directions.empty()) // find berth
             {
@@ -155,14 +166,95 @@ void Master::assignTasks()
                     robots[i].target_berth = berth_idx;
                     Path2Directions(reverse_path, robots[i].directions);
 
-                    out << "Robots#" << i << " find berth path succeed, spends " << elapsed.count() << "ms\n";
+                    log << "Robots#" << i << " find berth path succeed, spends " << elapsed.count() << "ms\n";
                 }
                 else
+                    log << "Robots#" << i << " find berth path failed, spends " << elapsed.count() << "ms\n";
+
+                log.flush();
+                break;
+            }
+        }
+    }
+
+    if (ROBOT_NUM == i)
+        i = 0;
+}
+
+void Master::assignBoats()
+{
+    for (int i = 0; i < BOAT_NUM; ++i)
+    {
+        if (1 == boats[i].status) // loading or transportation completed
+        {
+            if (-1 == boats[i].pos) // transportation completed, target_pos must euqal to -1
+            {
+                int berth_idx, w, min_w = INTEGER_MAX;
+
+                for (int j = 0; j < BERTH_NUM; ++j)
                 {
-                    out << "Robots#" << i << " find berth path failed, spends " << elapsed.count() << "ms\n";
+                    if (-1 == berths[j].current_boat) // no boats in berth
+                        w = berths[j].transport_time -
+                            berths[j].loading_speed -
+                            berths[j].piled_values.size() -
+                            berths[j].total_value;
+                    else // there is already a ship at the berth
+                    {
+                        bool will_two_boats = false;
+
+                        for (const Boat &boat : boats)
+                        {
+                            if (boat.target_pos == j)
+                            {
+                                will_two_boats = true;
+                                break;
+                            }
+                        }
+
+                        if (will_two_boats)
+                            continue;
+
+                        int current_boat_capacity = boats[berths[j].current_boat].capacity,
+                            rest_items_cnt = berths[j].piled_values.size() - current_boat_capacity;
+
+                        if (rest_items_cnt <= 0) // one boat can load it all
+                            w = berths[j].transport_time - berths[j].loading_speed;
+                        else
+                        {
+                            int rest_value = std::accumulate(berths[j].piled_values.cbegin() + rest_items_cnt,
+                                                             berths[j].piled_values.cend(), 0);
+
+                            w = berths[j].transport_time -
+                                berths[j].loading_speed -
+                                rest_items_cnt -
+                                rest_value;
+                        }
+                    }
+
+                    if (w < min_w)
+                    {
+                        min_w = w;
+                        berth_idx = j;
+                    }
                 }
 
-                break;
+                boats[i].target_pos = berth_idx;
+            }
+            else // loading in berth
+            {
+                if (!boats[i].capacity) // full, go to virtual point
+                    boats[i].target_pos = -1;
+                else // not full
+                {
+                    Berth &berth = berths[boats[i].pos];
+
+                    int min = Minimum_3(boats[i].capacity, berth.loading_speed, berth.piled_values.size());
+                    int sub_value = std::accumulate(berth.piled_values.cbegin(), berth.piled_values.cbegin() + min, 0);
+
+                    boats[i].capacity -= min;
+                    berth.total_value -= sub_value;
+                    berth.piled_values.erase(berth.piled_values.begin(), berth.piled_values.begin() + min);
+                }
             }
         }
     }
@@ -172,18 +264,18 @@ void Master::control()
 {
     for (int i = 0; i < ROBOT_NUM; ++i)
     {
-        out << "Robots#" << std::setw(1) << i
+        log << "Robots#" << std::setw(1) << i
             << " |has_item: " << std::setw(2) << robots[i].has_item
             << " |x: " << std::setw(3) << robots[i].x
             << " |y: " << std::setw(3) << robots[i].y
             << " |status: " << std::setw(2) << robots[i].status
             << " |task: " << std::setw(2) << robots[i].task;
 
-        out << std::setw(5) << " |target_item: " << std::setw(2) << robots[i].target_item;
+        log << std::setw(5) << " |target_item: " << std::setw(2) << robots[i].target_item;
 
-        out << std::setw(5) << " |target_berth " << std::setw(2) << robots[i].target_berth;
+        log << std::setw(5) << " |target_berth " << std::setw(2) << robots[i].target_berth;
 
-        out << " |directions.empty(): " << std::setw(2) << robots[i].directions.empty()
+        log << " |directions.empty(): " << std::setw(2) << robots[i].directions.empty()
             << " |directions.size(): " << std::setw(2) << robots[i].directions.size() << '\n';
     }
 
@@ -195,7 +287,7 @@ void Master::control()
             if (1 == robots[i].task && items[robots[i].target_item].life_span < robots[i].directions.size())
             {
                 robots[i].task = 0;
-                items[robots[i].target_item].is_selected = 0;
+                item_selected[robots[i].target_item] = false;
             }
         }
         else // running well
@@ -208,23 +300,27 @@ void Master::control()
                 // avoid collision
 
                 std::cout << "move " << i << ' ' << robots[i].directions.back() << '\n';
-                out << "move " << i << ' ' << robots[i].directions.back() << '\n';
+                log << "move " << i << ' ' << robots[i].directions.back() << '\n';
 
                 robots[i].directions.pop_back();
 
                 if (robots[i].directions.empty()) // has arrived
                 {
-                    if (1 == robots[i].task) // get
+                    if (1 == robots[i].task)
                     {
-                        std::cout << "get " << i << '\n';
-                        out << "get " << i << '\n';
-
-                        robots[i].task = 2;
+                        if (items[robots[i].target_item].life_span > 0) // get
+                        {
+                            std::cout << "get " << i << '\n';
+                            log << "get " << i << '\n';
+                            robots[i].task = 2;
+                        }
+                        else // item disappear
+                            robots[i].task = 0;
                     }
                     else // pull
                     {
                         std::cout << "pull " << i << '\n';
-                        out << "pull " << i << '\n';
+                        log << "pull " << i << '\n';
 
                         int value = items[robots[i].target_item].value;
 
@@ -233,7 +329,7 @@ void Master::control()
                     }
                 }
 
-                out.flush();
+                log.flush();
             }
         }
     }
@@ -244,6 +340,7 @@ void Master::control()
 void Master::run()
 {
     update();
-    assignTasks();
+    assignRobots();
+    assignBoats();
     control();
 }
