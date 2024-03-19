@@ -1,11 +1,19 @@
 #ifndef MASTER_H
 #define MASTER_H 1
 
-#include <iostream>
+#ifndef DEBUG_MODE
+#define DEBUG_MODE 1
+#endif
+
 #include <numeric> // std::accumulate()
 #include <queue>
 #include "harbor.h"
 #include "utils.h"
+
+#ifdef DEBUG_MODE
+#include <fstream>
+#include <iomanip>
+#endif
 
 class Master
 {
@@ -19,15 +27,28 @@ public:
 
 private:
     void update();
-    void assignTasks();
+    void assignRobots();
+    void assignBoats();
     void control();
 
+#ifdef DEBUG_MODE
 private:
-    char map[N][N];
+    void printRobots();
+    void printBoats();
+    void printBerths();
+#endif
+
+private:
     Robot robots[ROBOT_NUM];
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
-    std::deque<Item> items;
+
+    std::vector<Item> items;
+    std::vector<bool> item_selected;
+
+#ifdef DEBUG_MODE
+    std::ofstream log;
+#endif
 };
 
 #endif
