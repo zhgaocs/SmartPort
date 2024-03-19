@@ -133,6 +133,6 @@ int Path2Directions(const std::vector<std::pair<int, int>> &reverse_path, std::v
         else if ((tmp = reverse_path[i + 1].second - reverse_path[i].second)) // y
             directions[i] = tmp > 0 ? LEFT : RIGHT;
     }
-
+    
     return 0;
 }

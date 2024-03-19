@@ -1,5 +1,6 @@
 #include "master.h"
 #include <chrono>
+#include <iomanip>
 
 Master::Master()
 {
@@ -65,11 +66,6 @@ void Master::update()
     for (int i = 0; i < ROBOT_NUM; ++i)
     {
         std::cin >> robots[i].has_item >> robots[i].x >> robots[i].y >> robots[i].status;
-        out << "Robots#" << i
-            << " has_item: " << robots[i].has_item << '\t'
-            << " x: " << robots[i].x << '\t'
-            << " y: " << robots[i].y << '\t'
-            << " status: " << robots[i].status << '\n';
     }
 
     out.flush();
@@ -90,14 +86,12 @@ void Master::update()
 void Master::assignTasks()
 {
     /* ROBOT */
-    static bool forbidden[ROBOT_NUM]; // {false, false, ...}
-
     int item_idx, berth_idx;
     std::vector<std::pair<int, int>> reverse_path;
 
     for (int i = 0; i < ROBOT_NUM; ++i)
     {
-        if (robots[i].status && !forbidden[i])
+        if (robots[i].status)
         {
             int w, min_w = INTEGER_MAX;
 
@@ -129,21 +123,14 @@ void Master::assignTasks()
                     items[item_idx].is_selected = 1;
                     Path2Directions(reverse_path, robots[i].directions);
 
-                    out << "FindPath succeed, spends " << elapsed.count() << "ms\n";
+                    out << "Robots#" << i << " find item succeed, spends " << elapsed.count() << "ms\n";
                 }
                 else
                 {
-                    forbidden[i] = true;
-                    out << "FindPath failed, spends " << elapsed.count() << "ms\n";
+                    out << "Robots#" << i << " find item failed, spends " << elapsed.count() << "ms\n";
                 }
 
                 out.flush();
-
-                if (ROBOT_NUM == i + 1)
-                    std::for_each(forbidden, forbidden + ROBOT_NUM, [](bool &b)
-                                  { b = false; });
-
-                break;
             }
             else if (2 == robots[i].task && robots[i].directions.empty()) // find berth
             {
@@ -158,19 +145,22 @@ void Master::assignTasks()
                     }
                 }
 
+                auto start = std::chrono::high_resolution_clock::now();
                 FindPath(map, robots[i].x, robots[i].y, berths[berth_idx].x, berths[berth_idx].y, reverse_path);
+                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double, std::milli> elapsed = end - start;
 
                 if (!reverse_path.empty())
                 {
                     robots[i].target_berth = berth_idx;
                     Path2Directions(reverse_path, robots[i].directions);
+
+                    out << "Robots#" << i << " find berth path succeed, spends " << elapsed.count() << "ms\n";
                 }
                 else
-                    forbidden[i] = true;
-
-                if (ROBOT_NUM == i + 1)
-                    std::for_each(forbidden, forbidden + ROBOT_NUM - 1, [](bool &b)
-                                  { b = false; });
+                {
+                    out << "Robots#" << i << " find berth path failed, spends " << elapsed.count() << "ms\n";
+                }
 
                 break;
             }
@@ -180,6 +170,23 @@ void Master::assignTasks()
 
 void Master::control()
 {
+    for (int i = 0; i < ROBOT_NUM; ++i)
+    {
+        out << "Robots#" << std::setw(1) << i
+            << " |has_item: " << std::setw(2) << robots[i].has_item
+            << " |x: " << std::setw(3) << robots[i].x
+            << " |y: " << std::setw(3) << robots[i].y
+            << " |status: " << std::setw(2) << robots[i].status
+            << " |task: " << std::setw(2) << robots[i].task;
+
+        out << std::setw(5) << " |target_item: " << std::setw(2) << robots[i].target_item;
+
+        out << std::setw(5) << " |target_berth " << std::setw(2) << robots[i].target_berth;
+
+        out << " |directions.empty(): " << std::setw(2) << robots[i].directions.empty()
+            << " |directions.size(): " << std::setw(2) << robots[i].directions.size() << '\n';
+    }
+
     /* ROBOT */
     for (int i = 0; i < ROBOT_NUM; ++i)
     {
@@ -195,13 +202,13 @@ void Master::control()
         {
             if (!robots[i].task) // no tasks
                 ;
-            else // has tasks
+            else if (!robots[i].directions.empty()) // has tasks and has found path
             {
                 // detect collision
                 // avoid collision
 
-                std::cout << "move " << i << robots[i].directions.back() << '\n';
-                out << "move " << i << robots[i].directions.back() << '\n';
+                std::cout << "move " << i << ' ' << robots[i].directions.back() << '\n';
+                out << "move " << i << ' ' << robots[i].directions.back() << '\n';
 
                 robots[i].directions.pop_back();
 
@@ -225,6 +232,8 @@ void Master::control()
                         berths[robots[i].target_berth].piled_values.emplace_back(value);
                     }
                 }
+
+                out.flush();
             }
         }
     }

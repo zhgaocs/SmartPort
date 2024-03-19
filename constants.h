@@ -14,7 +14,7 @@ constexpr int BOAT_NUM = 5;
 constexpr int ITEM_LIFESPAN_MAX = 1000;
 
 /* used in FindPath */
-constexpr int MAX_EXPLORED_NODES = 2500;
+constexpr int MAX_EXPLORED_NODES = 500;
 constexpr int NUM_OF_DIRECTIONS = 4;
 constexpr int DX[NUM_OF_DIRECTIONS] = {-1, 1, 0, 0};
 constexpr int DY[NUM_OF_DIRECTIONS] = {0, 0, -1, 1};
