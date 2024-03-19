@@ -63,7 +63,16 @@ void Master::update()
 
     /* robot */
     for (int i = 0; i < ROBOT_NUM; ++i)
+    {
         std::cin >> robots[i].has_item >> robots[i].x >> robots[i].y >> robots[i].status;
+        out << "Robots#" << i
+            << " has_item: " << robots[i].has_item << '\t'
+            << " x: " << robots[i].x << '\t'
+            << " y: " << robots[i].y << '\t'
+            << " status: " << robots[i].status << '\n';
+    }
+
+    out.flush();
 
     /* boat */
     for (int i = 0; i < BOAT_NUM; ++i)
@@ -127,7 +136,7 @@ void Master::assignTasks()
                     forbidden[i] = true;
                     out << "FindPath failed, spends " << elapsed.count() << "ms\n";
                 }
-                
+
                 out.flush();
 
                 if (ROBOT_NUM == i + 1)
@@ -172,6 +181,54 @@ void Master::assignTasks()
 void Master::control()
 {
     /* ROBOT */
+    for (int i = 0; i < ROBOT_NUM; ++i)
+    {
+        if (!robots[i].status) // recover
+        {
+            if (1 == robots[i].task && items[robots[i].target_item].life_span < robots[i].directions.size())
+            {
+                robots[i].task = 0;
+                items[robots[i].target_item].is_selected = 0;
+            }
+        }
+        else // running well
+        {
+            if (!robots[i].task) // no tasks
+                ;
+            else // has tasks
+            {
+                // detect collision
+                // avoid collision
+
+                std::cout << "move " << i << robots[i].directions.back() << '\n';
+                out << "move " << i << robots[i].directions.back() << '\n';
+
+                robots[i].directions.pop_back();
+
+                if (robots[i].directions.empty()) // has arrived
+                {
+                    if (1 == robots[i].task) // get
+                    {
+                        std::cout << "get " << i << '\n';
+                        out << "get " << i << '\n';
+
+                        robots[i].task = 2;
+                    }
+                    else // pull
+                    {
+                        std::cout << "pull " << i << '\n';
+                        out << "pull " << i << '\n';
+
+                        int value = items[robots[i].target_item].value;
+
+                        berths[robots[i].target_berth].total_value += value;
+                        berths[robots[i].target_berth].piled_values.emplace_back(value);
+                    }
+                }
+            }
+        }
+    }
+
     std::cout << "OK" << std::flush;
 }
 

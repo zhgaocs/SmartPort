@@ -10,9 +10,9 @@ struct Robot
     int has_item; /* 0 - no items, 1 - has items */
     int status;   /* 0 - recover, 1 - running */
     /*-------------------------------------------------------------------*/
-    int task = 0;          // 0 - no tasks, 1 - get item, 2 - pull item
-    int target_item = -1;  // -1 - no items selected
-    int target_berth = -1; // -1 - no berths selected
+    int task = 0;                // 0 - no tasks, 1 - get item, 2 - pull item
+    int target_item = -1;        // -1 - no items selected
+    int target_berth = -1;       // -1 - no berths selected
     std::vector<int> directions; // reverse path
     /*-------------------------------------------------------------------*/
 };

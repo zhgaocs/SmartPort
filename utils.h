@@ -31,8 +31,8 @@ inline int Min(int x, int y, int z)
     return std::min(x, std::min(y, z));
 }
 
-int FindPath(const char (&map)[N][N], int src_x, int src_y, int dst_x, int dst_y, std::vector<std::pair<int, int>>& path);
+int FindPath(const char (&map)[N][N], int src_x, int src_y, int dst_x, int dst_y, std::vector<std::pair<int, int>> &path);
 
-int Path2Directions(const std::vector<std::pair<int, int>> &reverse_path, std::vector<int>& directions);
+int Path2Directions(const std::vector<std::pair<int, int>> &reverse_path, std::vector<int> &directions);
 
 #endif
