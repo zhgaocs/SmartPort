@@ -10,7 +10,7 @@
 class Master
 {
 public:
-    Master() = default;
+    Master();
     ~Master() = default;
 
 public:
@@ -22,15 +22,12 @@ private:
     void assignTasks();
     void control();
 
-private:    
-    std::vector<std::pair<int, int>> findBerthPoint(int berth_idx);
-
 private:
     char map[N][N];
     Robot robots[ROBOT_NUM];
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
-    std::vector<Item> items;
+    std::deque<Item> items;
 };
 
 #endif

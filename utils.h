@@ -9,6 +9,18 @@
 #include <vector>
 #include "constants.h"
 
+namespace std
+{
+    template <>
+    struct hash<std::pair<int, int>>
+    {
+        size_t operator()(const std::pair<int, int> &p) const
+        {
+            return p.first * N + p.second;
+        }
+    };
+}
+
 inline unsigned int Manhattan(int x1, int y1, int x2, int y2)
 {
     return abs(x1 - x2) + abs(y1 - y2);

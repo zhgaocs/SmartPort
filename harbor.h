@@ -27,7 +27,7 @@ struct Berth
     /*-------------------------------------------------------------------*/
     int total_value = 0; // total value of the berth
     int boat_index = -1; // -1 represents no boats
-    std::deque<int> piled_items;
+    std::deque<int> piled_values;
     /*-------------------------------------------------------------------*/
 };
 

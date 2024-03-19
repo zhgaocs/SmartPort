@@ -6,18 +6,6 @@ int Min(int x, int y, int z)
     return tmp < z ? tmp : z;
 }
 
-namespace std
-{
-    template <>
-    struct hash<std::pair<int, int>>
-    {
-        size_t operator()(const std::pair<int, int> &p) const
-        {
-            return p.first * N + p.second;
-        }
-    };
-}
-
 std::vector<std::pair<int, int>> FindPath(const char (&map)[N][N], int src_x, int src_y, int dst_x, int dst_y)
 {
     /* ------------------------------------------------------------------------------------------- */
@@ -63,7 +51,7 @@ std::vector<std::pair<int, int>> FindPath(const char (&map)[N][N], int src_x, in
         {
             while (current)
             {
-                path.push_back(std::make_pair(current->x, current->y));
+                path.emplace_back(current->x, current->y);
                 current = current->prev;
             }
 
@@ -77,15 +65,16 @@ std::vector<std::pair<int, int>> FindPath(const char (&map)[N][N], int src_x, in
 
         // move current from open_set to close_set
         open_set.erase(iter);
-        close_vec.push_back(current);
-        close_set.insert(std::make_pair(current->x, current->y));
+        close_vec.emplace_back(current);
+        close_set.emplace(current->x, current->y);
 
         for (int i = 0; i < 4; ++i)
         {
             int nx = current->x + DX[i];
             int ny = current->y + DY[i];
 
-            if (nx < 0 || ny < 0 || nx + 1 > N || ny + 1 > N || map[nx][ny] != PATHWAY_SYMBOL)
+            if (nx < 0 || ny < 0 || nx + 1 > N || ny + 1 > N ||
+                (map[nx][ny] != PATHWAY_SYMBOL && map[nx][ny] != BERTH_SYMBOL))
                 continue;
 
             if (close_set.end() != close_set.find(std::make_pair(nx, ny))) // if neighbor is in close_set
@@ -116,7 +105,7 @@ std::vector<std::pair<int, int>> FindPath(const char (&map)[N][N], int src_x, in
                 neighbor->g = g, neighbor->h = Manhattan(nx, ny, dst_x, dst_y);
                 neighbor->f = neighbor->g + neighbor->h;
                 neighbor->prev = current;
-                open_set.insert(neighbor);
+                open_set.emplace(neighbor);
             }
         }
     }
