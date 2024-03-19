@@ -1,18 +1,20 @@
 #include "master.h"
-#include <chrono>
-#include <iomanip>
 
 Master::Master()
 {
     std::ios::sync_with_stdio(false);
 
+#ifdef DEBUG_MODE
     log.open("log.txt");
+#endif
 }
 
 void Master::init()
 {
     char ok_str[3];
     int boat_capacity, berth_id;
+
+    InitMap();
 
     /* init berth */
     for (int i = 0; i < BERTH_NUM; ++i)
@@ -40,9 +42,6 @@ void Master::update()
 
     std::cin >> frame_id >> current_money;
 
-    log << "---------------------------------------------------" << frame_id
-        << "---------------------------------------------------\n";
-
     /* new items */
     std::cin >> new_items_cnt;
     for (int i = 0; i < new_items_cnt; ++i)
@@ -57,8 +56,6 @@ void Master::update()
     {
         std::cin >> robots[i].has_item >> robots[i].x >> robots[i].y >> robots[i].status;
     }
-
-    log.flush();
 
     /* boat */
     for (int i = 0; i < BOAT_NUM; ++i)
@@ -118,10 +115,7 @@ void Master::assignRobots()
                         break;
                 }
 
-                auto start = std::chrono::high_resolution_clock::now();
                 FindPath(robots[i].x, robots[i].y, items[item_idx].x, items[item_idx].y, reverse_path);
-                auto end = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double, std::milli> elapsed = end - start;
 
                 if (!reverse_path.empty() && reverse_path.size() < items[item_idx].life_span)
                 {
@@ -129,13 +123,7 @@ void Master::assignRobots()
                     robots[i].target_item = item_idx;
                     item_selected[item_idx] = true;
                     Path2Directions(reverse_path, robots[i].directions);
-
-                    log << "Robots#" << i << " find item succeed, spends " << elapsed.count() << "ms\n";
                 }
-                else
-                    log << "Robots#" << i << " find item failed, spends " << elapsed.count() << "ms\n";
-
-                log.flush();
 
                 ++i;
                 break;
@@ -153,22 +141,13 @@ void Master::assignRobots()
                     }
                 }
 
-                auto start = std::chrono::high_resolution_clock::now();
                 FindPath(robots[i].x, robots[i].y, berths[berth_idx].x, berths[berth_idx].y, reverse_path);
-                auto end = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double, std::milli> elapsed = end - start;
 
                 if (!reverse_path.empty())
                 {
                     robots[i].target_berth = berth_idx;
                     Path2Directions(reverse_path, robots[i].directions);
-
-                    log << "Robots#" << i << " find berth path succeed, spends " << elapsed.count() << "ms\n";
                 }
-                else
-                    log << "Robots#" << i << " find berth path failed, spends " << elapsed.count() << "ms\n";
-
-                log.flush();
 
                 ++i;
                 break;
@@ -182,62 +161,46 @@ void Master::assignRobots()
 
 void Master::assignBoats()
 {
+    static int loading_times[BERTH_NUM] = {
+        berths[0].loading_speed,
+        berths[1].loading_speed,
+        berths[2].loading_speed,
+        berths[3].loading_speed,
+        berths[4].loading_speed,
+        berths[5].loading_speed,
+        berths[6].loading_speed,
+        berths[7].loading_speed,
+        berths[8].loading_speed,
+        berths[9].loading_speed};
+
     for (int i = 0; i < BOAT_NUM; ++i)
     {
         if (1 == boats[i].status) // loading or transportation completed
         {
             if (-1 == boats[i].pos) // transportation completed, target_pos must euqal to -1
             {
-                int berth_idx, w, min_w = INTEGER_MAX;
-
                 for (int j = 0; j < BERTH_NUM; ++j)
                 {
-                    if (-1 == berths[j].current_boat) // no boats in berth
-                        w = berths[j].transport_time -
-                            berths[j].loading_speed -
-                            berths[j].piled_values.size() -
-                            berths[j].total_value;
-                    else // there is already a ship at the berth
+                    if (!berths[j].total_value || berths[j].current_boat != -1)
+                        continue;
+
+                    bool is_chosen = false;
+
+                    for (int k = 0; k < BOAT_NUM; ++k)
                     {
-                        bool will_two_boats = false;
-
-                        for (const Boat &boat : boats)
+                        if (boats[k].target_pos == j)
                         {
-                            if (boat.target_pos == j)
-                            {
-                                will_two_boats = true;
-                                break;
-                            }
-                        }
-
-                        if (will_two_boats)
-                            continue;
-
-                        int current_boat_capacity = boats[berths[j].current_boat].capacity,
-                            rest_items_cnt = berths[j].piled_values.size() - current_boat_capacity;
-
-                        if (rest_items_cnt <= 0) // one boat can load it all
-                            w = berths[j].transport_time - berths[j].loading_speed;
-                        else
-                        {
-                            int rest_value = std::accumulate(berths[j].piled_values.cbegin() + rest_items_cnt,
-                                                             berths[j].piled_values.cend(), 0);
-
-                            w = berths[j].transport_time -
-                                berths[j].loading_speed -
-                                rest_items_cnt -
-                                rest_value;
+                            is_chosen = true;
+                            break;
                         }
                     }
 
-                    if (w < min_w)
-                    {
-                        min_w = w;
-                        berth_idx = j;
-                    }
+                    if (is_chosen)
+                        continue;
+
+                    boats[i].target_pos = j;
+                    break;
                 }
-
-                boats[i].target_pos = berth_idx;
             }
             else // loading in berth
             {
@@ -245,14 +208,20 @@ void Master::assignBoats()
                     boats[i].target_pos = -1;
                 else // not full
                 {
-                    Berth &berth = berths[boats[i].pos];
+                    if (!(--loading_times[boats[i].pos]))
+                    {
+                        Berth &berth = berths[boats[i].pos];
 
-                    int min = Minimum_3(boats[i].capacity, berth.loading_speed, berth.piled_values.size());
-                    int sub_value = std::accumulate(berth.piled_values.cbegin(), berth.piled_values.cbegin() + min, 0);
+                        loading_times[boats[i].pos] = berth.loading_speed;
 
-                    boats[i].capacity -= min;
-                    berth.total_value -= sub_value;
-                    berth.piled_values.erase(berth.piled_values.begin(), berth.piled_values.begin() + min);
+                        int min = boats[i].capacity < berth.piled_values.size() ? boats[i].capacity : berth.piled_values.size();
+                        int sub_value = std::accumulate(berth.piled_values.cbegin(), berth.piled_values.cbegin() + min, 0);
+                        boats[i].capacity -= min;
+                        berth.total_value -= sub_value;
+                        berth.piled_values.erase(berth.piled_values.begin(), berth.piled_values.begin() + min);
+
+                        boats[i].target_pos = -1; // transport once full
+                    }
                 }
             }
         }
@@ -261,23 +230,6 @@ void Master::assignBoats()
 
 void Master::control()
 {
-    for (int i = 0; i < ROBOT_NUM; ++i)
-    {
-        log << "Robots#" << std::setw(1) << i
-            << " |has_item: " << std::setw(2) << robots[i].has_item
-            << " |x: " << std::setw(3) << robots[i].x
-            << " |y: " << std::setw(3) << robots[i].y
-            << " |status: " << std::setw(2) << robots[i].status
-            << " |task: " << std::setw(2) << robots[i].task;
-
-        log << std::setw(5) << " |target_item: " << std::setw(2) << robots[i].target_item;
-
-        log << std::setw(5) << " |target_berth " << std::setw(2) << robots[i].target_berth;
-
-        log << " |directions.empty(): " << std::setw(2) << robots[i].directions.empty()
-            << " |directions.size(): " << std::setw(2) << robots[i].directions.size() << '\n';
-    }
-
     /* ROBOT */
     for (int i = 0; i < ROBOT_NUM; ++i)
     {
@@ -297,9 +249,7 @@ void Master::control()
             {
                 // detect collision
                 // avoid collision
-
                 std::cout << "move " << i << ' ' << robots[i].directions.back() << '\n';
-                log << "move " << i << ' ' << robots[i].directions.back() << '\n';
 
                 robots[i].directions.pop_back();
 
@@ -310,7 +260,6 @@ void Master::control()
                         if (items[robots[i].target_item].life_span > 0) // get
                         {
                             std::cout << "get " << i << '\n';
-                            log << "get " << i << '\n';
                             robots[i].task = 2;
                         }
                         else // item disappear
@@ -319,7 +268,6 @@ void Master::control()
                     else // pull
                     {
                         std::cout << "pull " << i << '\n';
-                        log << "pull " << i << '\n';
 
                         int value = items[robots[i].target_item].value;
 
@@ -327,14 +275,22 @@ void Master::control()
                         berths[robots[i].target_berth].piled_values.emplace_back(value);
                     }
                 }
-
-                log.flush();
             }
         }
     }
 
     /* BOAT */
-    
+    for (int i = 0; i < BOAT_NUM; ++i)
+    {
+        if (1 == boats[i].status && boats[i].pos != boats[i].target_pos)
+        {
+            if (-1 == boats[i].pos)
+                std::cout << "ship " << i << ' ' << boats[i].target_pos << '\n';
+            else
+                std::cout << "go " << i << '\n';
+        }
+    }
+
     std::cout << "OK" << std::flush;
 }
 
@@ -345,3 +301,47 @@ void Master::run()
     assignBoats();
     control();
 }
+
+#ifdef DEBUG_MODE
+void Master::printRobots()
+{
+    for (int i = 0; i < ROBOT_NUM; ++i)
+        log << "Robot#" << std::setw(1) << i
+            << " |has_item: " << std::setw(1) << robots[i].has_item
+            << " |x: " << std::setw(3) << robots[i].x
+            << " |y: " << std::setw(3) << robots[i].y
+            << " |status: " << std::setw(1) << robots[i].status
+            << " |task: " << std::setw(1) << robots[i].task
+            << " |target_item: " << std::setw(2) << robots[i].target_item
+            << " |target_berth " << std::setw(2) << robots[i].target_berth
+            << " |directions.empty(): " << std::setw(1) << robots[i].directions.empty()
+            << " |directions.size(): " << std::setw(3) << robots[i].directions.size() << '\n';
+
+    log.flush();
+}
+
+void Master::printBoats()
+{
+    for (int i = 0; i < BOAT_NUM; ++i)
+        log << "Boat#" << std::setw(1) << i
+            << " |status: " << std::setw(1) << boats[i].status
+            << " |pos: " << std::setw(2) << boats[i].pos
+            << " |capacity: " << std::setw(3) << boats[i].capacity
+            << " |target_pos: " << std::setw(2) << boats[i].target_pos << '\n';
+    log.flush();
+}
+
+void Master::printBerths()
+{
+    for (int i = 0; i < BERTH_NUM; ++i)
+        log << "Berth#" << std::setw(1) << i
+            << " |x: " << std::setw(3) << berths[i].x
+            << " |y: " << std::setw(3) << berths[i].y
+            << " |transport_time: " << std::setw(3) << berths[i].transport_time
+            << " |loading_speed: " << std::setw(3) << berths[i].loading_speed
+            << " |total_value: " << std::setw(3) << berths[i].total_value
+            << " |current_boat: " << std::setw(3) << berths[i].current_boat
+            << " |piled_values.size(): " << std::setw(3) << berths[i].piled_values.size() << '\n';
+    log.flush();
+}
+#endif
