@@ -14,11 +14,6 @@ void Master::init()
     char ok_str[3];
     int boat_capacity, berth_id;
 
-    /* init map */
-    for (int i = 0; i < N; ++i)
-        for (int j = 0; j < N; ++j)
-            std::cin >> map[i][j];
-
     /* init berth */
     for (int i = 0; i < BERTH_NUM; ++i)
     {
@@ -124,7 +119,7 @@ void Master::assignRobots()
                 }
 
                 auto start = std::chrono::high_resolution_clock::now();
-                FindPath(map, robots[i].x, robots[i].y, items[item_idx].x, items[item_idx].y, reverse_path);
+                FindPath(robots[i].x, robots[i].y, items[item_idx].x, items[item_idx].y, reverse_path);
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> elapsed = end - start;
 
@@ -141,6 +136,8 @@ void Master::assignRobots()
                     log << "Robots#" << i << " find item failed, spends " << elapsed.count() << "ms\n";
 
                 log.flush();
+
+                ++i;
                 break;
             }
             else if (2 == robots[i].task && robots[i].directions.empty()) // find berth
@@ -157,7 +154,7 @@ void Master::assignRobots()
                 }
 
                 auto start = std::chrono::high_resolution_clock::now();
-                FindPath(map, robots[i].x, robots[i].y, berths[berth_idx].x, berths[berth_idx].y, reverse_path);
+                FindPath(robots[i].x, robots[i].y, berths[berth_idx].x, berths[berth_idx].y, reverse_path);
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> elapsed = end - start;
 
@@ -172,6 +169,8 @@ void Master::assignRobots()
                     log << "Robots#" << i << " find berth path failed, spends " << elapsed.count() << "ms\n";
 
                 log.flush();
+
+                ++i;
                 break;
             }
         }
@@ -334,6 +333,8 @@ void Master::control()
         }
     }
 
+    /* BOAT */
+    
     std::cout << "OK" << std::flush;
 }
 

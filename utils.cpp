@@ -1,6 +1,16 @@
 #include "utils.h"
 
-int FindPath(const char (&map)[N][N], int src_x, int src_y, int dst_x, int dst_y, std::vector<std::pair<int, int>> &path)
+static char map[N][N];
+
+void InitMap()
+{
+    /* init map */
+    for (int i = 0; i < N; ++i)
+        for (int j = 0; j < N; ++j)
+            std::cin >> map[i][j];
+}
+
+int FindPath(int src_x, int src_y, int dst_x, int dst_y, std::vector<std::pair<int, int>> &path)
 {
     /* ------------------------------------------------------------------------------------------- */
     struct Node
@@ -133,6 +143,6 @@ int Path2Directions(const std::vector<std::pair<int, int>> &reverse_path, std::v
         else if ((tmp = reverse_path[i + 1].second - reverse_path[i].second)) // y
             directions[i] = tmp > 0 ? LEFT : RIGHT;
     }
-    
+
     return 0;
 }

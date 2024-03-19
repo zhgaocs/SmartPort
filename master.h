@@ -1,7 +1,6 @@
 #ifndef MASTER_H
 #define MASTER_H 1
 
-#include <iostream>
 #include <numeric> // std::accumulate()
 #include <queue>
 #include "harbor.h"
@@ -26,7 +25,6 @@ private:
     void control();
 
 private:
-    char map[N][N];
     Robot robots[ROBOT_NUM];
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];

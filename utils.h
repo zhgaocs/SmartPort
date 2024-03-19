@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -31,7 +32,9 @@ inline int Minimum_3(int x, int y, int z)
     return std::min(x, std::min(y, z));
 }
 
-int FindPath(const char (&map)[N][N], int src_x, int src_y, int dst_x, int dst_y, std::vector<std::pair<int, int>> &path);
+void InitMap();
+
+int FindPath(int src_x, int src_y, int dst_x, int dst_y, std::vector<std::pair<int, int>> &path);
 
 int Path2Directions(const std::vector<std::pair<int, int>> &reverse_path, std::vector<int> &directions);
 
