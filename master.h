@@ -7,6 +7,8 @@
 #include "harbor.h"
 #include "utils.h"
 
+#include <fstream>
+
 class Master
 {
 public:
@@ -28,6 +30,8 @@ private:
     Berth berths[BERTH_NUM];
     Boat boats[BOAT_NUM];
     std::deque<Item> items;
+
+    std::ofstream out;
 };
 
 #endif

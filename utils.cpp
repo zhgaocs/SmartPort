@@ -1,12 +1,6 @@
 #include "utils.h"
 
-int Min(int x, int y, int z)
-{
-    int tmp = x < y ? x : y;
-    return tmp < z ? tmp : z;
-}
-
-std::vector<std::pair<int, int>> FindPath(const char (&map)[N][N], int src_x, int src_y, int dst_x, int dst_y)
+int FindPath(const char (&map)[N][N], int src_x, int src_y, int dst_x, int dst_y, std::vector<std::pair<int, int>> &path)
 {
     /* ------------------------------------------------------------------------------------------- */
     struct Node
@@ -29,22 +23,28 @@ std::vector<std::pair<int, int>> FindPath(const char (&map)[N][N], int src_x, in
         }
     };
     /* ------------------------------------------------------------------------------------------- */
-
     std::multiset<Node *, CompareNode> open_set;
     std::unordered_set<std::pair<int, int>> close_set;
-    std::vector<Node *> close_vec; // used to store pointers that are new and are not in open_set
-    std::vector<std::pair<int, int>> path;
+    std::vector<Node *> close_vec;
 
     Node *start = new Node(src_x, src_y);
     start->g = 0, start->h = Manhattan(src_x, src_y, dst_x, dst_y);
     start->f = start->g + start->h;
 
-    open_set.insert(start);
+    path.clear();
+    open_set.emplace(start);
 
     while (!open_set.empty())
     {
-        auto iter = open_set.begin();
-        Node *current = *iter;
+        auto it = open_set.begin();
+        Node *current = *it;
+
+        if (close_set.size() == MAX_EXPLORED_NODES)
+        {
+            std::for_each(open_set.begin(), open_set.end(), [](Node *node)
+                          { delete node; });
+            break;
+        }
 
         // if current is destination, then the path has been found
         if (current->x == dst_x && current->y == dst_y)
@@ -59,16 +59,15 @@ std::vector<std::pair<int, int>> FindPath(const char (&map)[N][N], int src_x, in
                           { delete node; });
 
             /* std::reverse(path.begin(), path.end()); */
-
             break;
         }
 
         // move current from open_set to close_set
-        open_set.erase(iter);
+        open_set.erase(it);
         close_vec.emplace_back(current);
         close_set.emplace(current->x, current->y);
 
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < NUM_OF_DIRECTIONS; ++i)
         {
             int nx = current->x + DX[i];
             int ny = current->y + DY[i];
@@ -113,20 +112,27 @@ std::vector<std::pair<int, int>> FindPath(const char (&map)[N][N], int src_x, in
     std::for_each(close_vec.begin(), close_vec.end(), [](Node *nodeptr)
                   { delete nodeptr; });
 
-    return path;
+    if (path.empty())
+        return -1;
+    else
+        return 0;
 }
 
-std::vector<int> Path2Directions(const std::vector<std::pair<int, int>> &path)
+int Path2Directions(const std::vector<std::pair<int, int>> &reverse_path, std::vector<int> &directions)
 {
-    int tmp;
-    std::vector<int> vec_d(path.size() - 1);
+    if (reverse_path.empty())
+        return -1;
 
-    for (int i = 0; i < path.size() - 1; ++i)
+    int tmp;
+    directions.resize(reverse_path.size() - 1);
+
+    for (int i = 0; i < directions.size(); ++i)
     {
-        if ((tmp = path[i + 1].first - path[i].first)) // x
-            vec_d[i] = tmp > 0 ? UP : DOWN;
-        else if ((tmp = path[i + 1].second - path[i].second)) // y
-            vec_d[i] = tmp > 0 ? LEFT : RIGHT;
+        if ((tmp = reverse_path[i + 1].first - reverse_path[i].first)) // x
+            directions[i] = tmp > 0 ? UP : DOWN;
+        else if ((tmp = reverse_path[i + 1].second - reverse_path[i].second)) // y
+            directions[i] = tmp > 0 ? LEFT : RIGHT;
     }
-    return vec_d;
+
+    return 0;
 }

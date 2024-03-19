@@ -3,19 +3,18 @@
 
 #include <limits>
 
-/* map */
+/* settings */
 constexpr int N = 200;
 constexpr char PATHWAY_SYMBOL = '.';
 constexpr char BERTH_SYMBOL = 'B';
-constexpr int BERTH_SIZE = 4; // berth: 4*4
-
-/* settings */
 constexpr int ROBOT_NUM = 10;
 constexpr int BERTH_NUM = 10;
+constexpr int BERTH_SIZE = 4; // berth: 4*4
 constexpr int BOAT_NUM = 5;
-constexpr int ITEM_MAX_LIFESPAN = 1000;
+constexpr int ITEM_LIFESPAN_MAX = 1000;
 
 /* used in FindPath */
+constexpr int MAX_EXPLORED_NODES = 2500;
 constexpr int NUM_OF_DIRECTIONS = 4;
 constexpr int DX[NUM_OF_DIRECTIONS] = {-1, 1, 0, 0};
 constexpr int DY[NUM_OF_DIRECTIONS] = {0, 0, -1, 1};
