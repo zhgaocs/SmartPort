@@ -11,7 +11,7 @@ constexpr int ROBOT_NUM = 10;
 constexpr int BERTH_NUM = 10;
 constexpr int BERTH_SIZE = 4; // berth: 4*4
 constexpr int BOAT_NUM = 5;
-constexpr int ITEM_LIFESPAN_MAX = 1000;
+constexpr int ITEM_LIFESPAN_MAX = 1001;
 
 /* used in FindPath */
 constexpr int MAX_EXPLORED_NODES = 500;
