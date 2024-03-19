@@ -27,11 +27,6 @@ inline unsigned int Manhattan(int x1, int y1, int x2, int y2)
     return abs(x1 - x2) + abs(y1 - y2);
 }
 
-inline int Minimum_3(int x, int y, int z)
-{
-    return std::min(x, std::min(y, z));
-}
-
 void InitMap();
 
 int FindPath(int src_x, int src_y, int dst_x, int dst_y, std::vector<std::pair<int, int>> &path);
