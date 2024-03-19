@@ -31,11 +31,11 @@ struct Berth
 
 struct Boat
 {
-    int pos = -1;   /* -1 - virtual point */
     int status = 1; /* 0 - moving, 1 - running well, 2 - waiting */
+    int pos = -1;   /* -1 - virtual point */
     int capacity;   /* 1 <= capacity <= 1000*/
     /*-------------------------------------------------------------------*/
-    int target_pos = -2; // -2 - no selected
+    int target_pos = -1; // virtual point or no selected berth
     /*-------------------------------------------------------------------*/
 };
 
@@ -44,12 +44,9 @@ struct Item
     int x, y;
     int value;     /* value <= 200 */
     int life_span; /* life_span <= 1000 */
-    /*-------------------------------------------------------------------*/
-    int is_selected;
-    /*-------------------------------------------------------------------*/
 
-    Item(int x, int y, int value, int life_span, int is_selected)
-        : x(x), y(y), value(value), life_span(life_span), is_selected(is_selected) {}
+    Item(int x, int y, int value, int life_span)
+        : x(x), y(y), value(value), life_span(life_span) {}
 };
 
 #endif
