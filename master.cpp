@@ -13,7 +13,7 @@ void Master::init()
     int boat_capacity;
 
     InitMap();
-
+    
     /* init berth */
     for (int i = 0; i < BERTH_NUM; ++i)
     {
@@ -29,8 +29,62 @@ void Master::init()
 
     /* OK */
     scanf("%s", okk);
+
+    preprocess(); // must behind init berth
+
     printf("OK\n");
     fflush(stdout);
+}
+
+void Master::run()
+{
+    update();
+    assignRobots();
+    assignBoats();
+    control();
+}
+
+void Master::preprocess() const
+{
+    int count = 0;
+
+    srand(time(nullptr));
+
+    while(count < CACHED_PATH_MAX_SIZE)
+    {
+        int x = rand() % N;
+        int y = rand() % N;
+        int point_hash = x * N + y;
+
+        auto it = nearest_berth.find(point_hash);
+
+        if(map[x][y] == PATHWAY_SYMBOL && it == nearest_berth.cend())
+        {   
+            int berth_idx = -1, min_dist = INTEGER_MAX;
+            std::vector<int> path, shortest_path;
+
+            for(int j = 0; j < BERTH_NUM; ++j)
+            {
+                if(FindPath(x, y, berths[j].x, berths[j].y, path))
+                {
+                    if (path.size() < min_dist)
+                    {
+                        berth_idx = j;
+                        min_dist = path.size();
+                        shortest_path = std::move(path);
+                    }
+                }
+            }
+
+            if(berth_idx != -1)
+            {
+                nearest_berth[point_hash] = berth_idx;
+                point_pathidx[point_hash] = count;
+                cached_paths[++count] = std::move(shortest_path);
+            }
+            
+        }
+    }
 }
 
 void Master::update()
@@ -158,7 +212,7 @@ void Master::assignRobots()
                     int min_dist = INTEGER_MAX, berth_idx = -1;
                     std::vector<int> path, shortest_path;
 
-                    for (int j = 0; j < BERTH_NUM; ++j)
+                    for (int j = 0; j < BERTH_NUM; ++j, --rest_invoke)
                     {
                         if (FindPath(robots[i].x, robots[i].y, berths[j].x, berths[j].y, path))
                         {
@@ -180,12 +234,11 @@ void Master::assignRobots()
                         ;
                 }
                 else                                                                // cache hit
-                    robots[i].directions = cached_paths[point_pathidx[point_hash]]; // don't move
+                    robots[i].directions = cached_paths[point_pathidx[point_hash]]; // don't move, will be used later
             }
         }
         else // recover
-        {
-        }
+            ;
     }
 }
 
@@ -200,14 +253,6 @@ void Master::control()
 
     /* BOAT */
     // TODO
-}
-
-void Master::run()
-{
-    update();
-    assignRobots();
-    assignBoats();
-    control();
 }
 
 #ifdef DEBUG_MODE
@@ -233,7 +278,7 @@ void Master::printBoats()
     for (int i = 0; i < BOAT_NUM; ++i)
         log << "Boat#" << std::setw(1) << i
             << " |status: " << std::setw(1) << boats[i].status
-            << " |target_pos: " << std::setw(2) << boats[i].pos
+            << " |pos: " << std::setw(2) << boats[i].pos
             << " |rest_capacity: " << std::setw(3) << boats[i].rest_capacity << '\n';
     log.flush();
 }
