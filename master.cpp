@@ -13,7 +13,7 @@ void Master::init()
     int boat_capacity;
 
     InitMap();
-    
+
     /* init berth */
     for (int i = 0; i < BERTH_NUM; ++i)
     {
@@ -50,7 +50,7 @@ void Master::preprocess() const
 
     srand(time(nullptr));
 
-    while(count < CACHED_PATH_MAX_SIZE)
+    while (count < CACHED_PATH_MAX_SIZE)
     {
         int x = rand() % N;
         int y = rand() % N;
@@ -58,14 +58,14 @@ void Master::preprocess() const
 
         auto it = nearest_berth.find(point_hash);
 
-        if(map[x][y] == PATHWAY_SYMBOL && it == nearest_berth.cend())
-        {   
+        if (map[x][y] == PATHWAY_SYMBOL && nearest_berth.cend() == it) // not in cache
+        {
             int berth_idx = -1, min_dist = INTEGER_MAX;
             std::vector<int> path, shortest_path;
 
-            for(int j = 0; j < BERTH_NUM; ++j)
+            for (int j = 0; j < BERTH_NUM; ++j)
             {
-                if(FindPath(x, y, berths[j].x, berths[j].y, path))
+                if (FindPath(x, y, berths[j].x, berths[j].y, path))
                 {
                     if (path.size() < min_dist)
                     {
@@ -76,13 +76,13 @@ void Master::preprocess() const
                 }
             }
 
-            if(berth_idx != -1)
+            if (berth_idx != -1)
             {
                 nearest_berth[point_hash] = berth_idx;
                 point_pathidx[point_hash] = count;
-                cached_paths[++count] = std::move(shortest_path);
+                cached_paths[count] = std::move(shortest_path);
+                ++count;
             }
-            
         }
     }
 }
@@ -146,13 +146,13 @@ void Master::assignRobots()
 
     for (int i = 0; i < ROBOT_NUM && rest_invoke; ++i)
     {
-        if (!robots[i].status) // running well
+        if (!robots[i].task && rest_invoke >= 2) // no tasks, select item
         {
-            if (!robots[i].task) // no tasks, select item
+            if (robots[i].status) // running well
             {
                 int glob_item, local_item, glob_max = 0, local_max = 0;
 
-                for (int j = items.size() - 1; j >= 0 && items[j].life_span > 0; --j)
+                for (int j = items.size() - 1; j >= 0 && items[j].life_span > 0; --j) // greater index, greater life_span
                 {
                     if (item_selected[j])
                         continue;
@@ -180,21 +180,20 @@ void Master::assignRobots()
                 {
                     --rest_invoke;
 
-                    if (FindPath(robots[i].x, robots[i].y, items[local_item].x, items[local_item].y,
-                                 robots[i].directions)) // FindPath success
+                    if (FindPath(robots[i].x, robots[i].y, items[local_item].x, items[local_item].y, robots[i].directions) &&
+                        robots[i].directions.size() <= items[local_item].life_span) // FindPath success
                     {
                         robots[i].task = 1;
                         robots[i].target_item = local_item;
                         item_selected[local_item] = true;
                         break;
                     }
-                    // find a path to global max value
                 }
 
                 --rest_invoke;
                 // there must be a global max value
-                if (FindPath(robots[i].x, robots[i].y, items[glob_item].x, items[glob_item].y,
-                             robots[i].directions)) // FindPath success
+                if (FindPath(robots[i].x, robots[i].y, items[glob_item].x, items[glob_item].y, robots[i].directions) &&
+                    robots[i].directions.size() <= items[glob_item].life_span) // FindPath success
                 {
                     robots[i].task = 1;
                     robots[i].target_item = glob_item;
@@ -202,43 +201,46 @@ void Master::assignRobots()
                 }
                 // else ; nothing to do
             }
-            else if (2 == robots[i].task && robots[i].directions.empty()) // select berth
+        }
+        else if (2 == robots[i].task && robots[i].directions.empty()) // select berth, include recover
+        {
+            int point_hash = robots[i].x * N + robots[i].y;
+            auto it = nearest_berth.find(point_hash);
+
+            if (nearest_berth.cend() == it && rest_invoke >= BERTH_NUM) // cache miss
             {
-                int point_hash = robots[i].x * N + robots[i].y;
-                auto it = nearest_berth.find(point_hash);
+                int min_dist = INTEGER_MAX, berth_idx = -1;
+                std::vector<int> path, shortest_path;
 
-                if (nearest_berth.cend() == it) // cache miss
+                for (int j = 0; j < BERTH_NUM; ++j)
                 {
-                    int min_dist = INTEGER_MAX, berth_idx = -1;
-                    std::vector<int> path, shortest_path;
-
-                    for (int j = 0; j < BERTH_NUM; ++j, --rest_invoke)
+                    if (FindPath(robots[i].x, robots[i].y, berths[j].x, berths[j].y, path))
                     {
-                        if (FindPath(robots[i].x, robots[i].y, berths[j].x, berths[j].y, path))
+                        if (path.size() < min_dist)
                         {
-                            if (path.size() < min_dist)
-                            {
-                                berth_idx = j;
-                                min_dist = path.size();
-                                shortest_path = std::move(path);
-                            }
+                            berth_idx = j;
+                            min_dist = path.size();
+                            shortest_path = std::move(path);
                         }
                     }
-
-                    if (berth_idx != -1) // can find a berth
-                    {
-                        robots[i].target_berth = berth_idx;
-                        robots[i].directions = std::move(shortest_path);
-                    }
-                    else // cannot find a berth ???????????????????????????????????????
-                        ;
                 }
-                else                                                                // cache hit
-                    robots[i].directions = cached_paths[point_pathidx[point_hash]]; // don't move, will be used later
+
+                if (berth_idx != -1) // can find a berth
+                {
+                    robots[i].target_berth = berth_idx;
+                    robots[i].directions = std::move(shortest_path);
+                }
+                else // cannot find a berth ???????????????????????????????????????
+                    ;
+
+                rest_invoke -= BERTH_NUM;
+            }
+            else // cache hit
+            {
+                robots[i].target_berth = it->second;
+                robots[i].directions = cached_paths[point_pathidx[point_hash]]; // don't move, will be used later
             }
         }
-        else // recover
-            ;
     }
 }
 
@@ -249,10 +251,59 @@ void Master::assignBoats()
 void Master::control()
 {
     /* ROBOT */
-    // TODO
+    for (int i = 0; i < ROBOT_NUM; ++i)
+    {
+        if (robots[i].status) // running well
+        {
+            if (!robots[i].task) // no tasks
+                ;
+            else if (!robots[i].directions.empty()) // has tasks && has found path
+            {
+                // detect collision
+                // avoid collision
+                printf("move %d %d\n", i, robots[i].directions.back());
+#ifdef DEBUG_MODE
+                log << "move " << i << ' ' << robots[i].directions.back() << '\n';
+#endif
+                robots[i].directions.pop_back();
+
+                if (robots[i].directions.empty()) // has arrived
+                {
+                    if (1 == robots[i].task) // get
+                    {
+                        if (items[robots[i].target_item].life_span > 0)
+                        {
+                            printf("get %d\n", i);
+                            robots[i].task = 0;
+#ifdef DEBUG_MODE
+                            log << "get " << i << '\n';
+#endif
+                        }
+                        else // item disappear
+                            robots[i].task = 0;
+                    }
+                    else // pull
+                    {
+                        printf("pull %d\n", i);
+#ifdef DEBUG_MODE
+                        log << "pull " << i << '\n';
+#endif
+                        robots[i].task = 0; // ...
+
+                        int value = items[robots[i].target_item].value;
+                        berths[robots[i].target_berth].total_value += value;
+                        berths[robots[i].target_berth].piled_values.emplace_back(value);
+                    }
+                }
+            }
+        }
+    }
 
     /* BOAT */
     // TODO
+
+    printf("OK");
+    fflush(stdout);
 }
 
 #ifdef DEBUG_MODE
@@ -286,7 +337,7 @@ void Master::printBoats()
 void Master::printBerths()
 {
     for (int i = 0; i < BERTH_NUM; ++i)
-        log << "Berth#" << std::setw(1) << i
+        log << "Berth#" << std::setw(3) << i
             << " |x: " << std::setw(3) << berths[i].x
             << " |y: " << std::setw(3) << berths[i].y
             << " |transport_time: " << std::setw(3) << berths[i].transport_time
@@ -297,4 +348,5 @@ void Master::printBerths()
             << " |piled_values.size(): " << std::setw(3) << berths[i].piled_values.size() << '\n';
     log.flush();
 }
+
 #endif
