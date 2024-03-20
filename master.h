@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <numeric> // std::accumulate()
+#include <unordered_map>
 #include "harbor.h"
 #include "utils.h"
 
@@ -46,6 +47,11 @@ private:
 
     std::vector<Item> items;
     std::vector<bool> item_selected;
+
+
+    std::unordered_map<int, int> nearest_berth; // key - hash(point), value - berth index
+    std::unordered_map<int, int> point_pathidx; // key - hash(point), value - cached_paths' index
+    std::vector<int> cached_paths[1000];
 
 #ifdef DEBUG_MODE
     std::ofstream log;
