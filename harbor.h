@@ -35,10 +35,10 @@ struct Berth
 
 struct Boat
 {
-    int status = 1; /* 0 - moving, 1 - running well, 2 - waiting */
-    int pos = -1;   /* -1 - virtual point */
+    int status = 1;   /* 0 - moving, 1 - running well, 2 - waiting */
+    int pos = -1;     /* -1 - virtual point */
+    int max_capacity; /* 1 <= capacity <= 1000*/
     int rest_capacity;
-    static int max_capacity; /* 1 <= capacity <= 1000*/
 };
 
 struct Item
