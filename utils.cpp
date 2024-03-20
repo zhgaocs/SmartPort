@@ -7,6 +7,8 @@ std::vector<int> cached_paths[CACHED_PATH_MAX_SIZE];
 
 bool FindPath(int src_x, int src_y, int dst_x, int dst_y, std::vector<int> &directions)
 {
+    // directions.clear();
+
     std::pair<int, int> pre[N + 10][N + 10];
     std::pair<int, int> queue[N * N + 10];
     int front = 0, rear = -1;
