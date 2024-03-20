@@ -14,9 +14,9 @@ constexpr int BOAT_NUM = 5;
 constexpr int ITEM_LIFESPAN_MAX = 1001;
 
 /* used in FindPath */
-constexpr int NUM_OF_DIRECTIONS = 4;
-constexpr int DX[NUM_OF_DIRECTIONS] = {-1, 1, 0, 0};
-constexpr int DY[NUM_OF_DIRECTIONS] = {0, 0, -1, 1};
+constexpr int CACHED_PATH_MAX_SIZE = 1000;
+constexpr int DX[4] = {-1, 1, 0, 0};
+constexpr int DY[4] = {0, 0, -1, 1};
 constexpr int INTEGER_MAX = std::numeric_limits<int>::max();
 
 /* used in Path2Directions */
