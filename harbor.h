@@ -6,7 +6,8 @@
 
 struct Robot
 {
-    int x, y;
+    int x;
+    int y;
     int has_item; /* 0 - no items, 1 - has items */
     int status;   /* 0 - recover, 1 - running */
     /*-------------------------------------------------------------------*/
@@ -19,29 +20,30 @@ struct Robot
 
 struct Berth
 {
-    int x, y;           /* upper left corner */
+    int x;
+    int y;              /* upper left corner */
     int transport_time; /* 1 <=  transport_time <= 1000, transport time to virtual point*/
     int loading_speed;  /* 1 <= loading_speed <= 5, the number of items that can be loaded per frame */
     /*-------------------------------------------------------------------*/
     int total_value = 0;
     int current_boat = -1; // -1 - no boats
+    int waiting_boat = -1; // -1 - no boats
+    int be_targeted = -1;  // -1 - no boats
     std::deque<int> piled_values;
     /*-------------------------------------------------------------------*/
 };
 
 struct Boat
 {
-    int status = 1; /* 0 - moving, 1 - running well, 2 - waiting */
-    int pos = -1;   /* -1 - virtual point */
-    int capacity;   /* 1 <= capacity <= 1000*/
-    /*-------------------------------------------------------------------*/
-    int target_pos = -1; // virtual point or no selected berth
-    /*-------------------------------------------------------------------*/
+    int status = 1;      /* 0 - moving, 1 - running well, 2 - waiting */
+    int target_pos = -1; /* -1 - virtual point */
+    int capacity;        /* 1 <= capacity <= 1000*/
 };
 
 struct Item
 {
-    int x, y;
+    int x;
+    int y;
     int value;     /* value <= 200 */
     int life_span; /* life_span <= 1000 */
 
