@@ -1,6 +1,9 @@
 #include "utils.h"
 
 char map[N][N];
+std::unordered_map<int, int> nearest_berth;
+std::unordered_map<int, int> point_pathidx;
+std::vector<int> cached_paths[CACHED_PATH_MAX_SIZE];
 
 bool FindPath(int src_x, int src_y, int dst_x, int dst_y, std::vector<int> &directions)
 {
