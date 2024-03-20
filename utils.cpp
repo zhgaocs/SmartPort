@@ -1,148 +1,57 @@
 #include "utils.h"
 
-static char map[N][N];
+char map[N][N];
 
-void InitMap()
+bool FindPath(int src_x, int src_y, int dst_x, int dst_y, std::vector<int> &directions)
 {
-    /* init map */
-    for (int i = 0; i < N; ++i)
-        for (int j = 0; j < N; ++j)
-            std::cin >> map[i][j];
-}
+    std::pair<int, int> pre[N + 10][N + 10];
+    std::pair<int, int> queue[N * N + 10];
+    int front = 0, rear = -1;
+    int dis[N + 10][N + 10];
+    std::vector<std::pair<int, int>> path;
+    memset(dis, -1, sizeof(dis));
+    dis[src_x][src_y] = 0;
+    queue[++rear] = {src_x, src_y};
+    pre[src_x][src_y] = {-1, -1};
 
-int FindPath(int src_x, int src_y, int dst_x, int dst_y, std::vector<std::pair<int, int>> &path)
-{
-    /* ------------------------------------------------------------------------------------------- */
-    struct Node
+    // bfs
+    while (front <= rear)
     {
-        int x, y;
-        int g, h, f;
-        Node *prev;
-
-        Node(int x, int y)
-            : x(x), y(y), g(INTEGER_MAX), h(0), f(INTEGER_MAX), prev(nullptr)
+        std::pair<int, int> cur = queue[front++];
+        if (cur.first == dst_x && cur.second == dst_y)
         {
-        }
-    };
-
-    struct CompareNode
-    {
-        bool operator()(const Node *lhs, const Node *rhs) const
-        {
-            return lhs->f < rhs->f;
-        }
-    };
-    /* ------------------------------------------------------------------------------------------- */
-    std::multiset<Node *, CompareNode> open_set;
-    std::unordered_set<std::pair<int, int>> close_set;
-    std::vector<Node *> close_vec;
-
-    Node *start = new Node(src_x, src_y);
-    start->g = 0, start->h = Manhattan(src_x, src_y, dst_x, dst_y);
-    start->f = start->g + start->h;
-
-    path.clear();
-    open_set.emplace(start);
-
-    while (!open_set.empty())
-    {
-        auto it = open_set.begin();
-        Node *current = *it;
-
-        if (close_set.size() == MAX_EXPLORED_NODES)
-        {
-            std::for_each(open_set.begin(), open_set.end(), [](Node *node)
-                          { delete node; });
-            break;
-        }
-
-        // if current is destination, then the path has been found
-        if (current->x == dst_x && current->y == dst_y)
-        {
-            while (current)
+            int step = dis[dst_x][dst_y];
+            int x = dst_x, y = dst_y;
+            while (x != -1 || y != -1)
             {
-                path.emplace_back(current->x, current->y);
-                current = current->prev;
+                path.emplace_back(x, y);
+                std::pair<int, int> p = pre[x][y];
+                x = p.first;
+                y = p.second;
             }
 
-            std::for_each(open_set.begin(), open_set.end(), [](Node *node)
-                          { delete node; });
-
-            /* std::reverse(path.begin(), path.end()); */
-            break;
+            // path -> directions
+            int tmp;
+            for (int i = 0; i < path.size() - 1; ++i)
+            {
+                if ((tmp = path[i + 1].first - path[i].first)) // x
+                    directions.emplace_back(tmp > 0 ? UP : DOWN);
+                else if ((tmp = path[i + 1].second - path[i].second)) // y
+                    directions.emplace_back(tmp > 0 ? LEFT : RIGHT);
+            }
+            return true;
         }
 
-        // move current from open_set to close_set
-        open_set.erase(it);
-        close_vec.emplace_back(current);
-        close_set.emplace(current->x, current->y);
-
-        for (int i = 0; i < NUM_OF_DIRECTIONS; ++i)
+        for (int i = 0; i < 4; ++i)
         {
-            int nx = current->x + DX[i];
-            int ny = current->y + DY[i];
-
-            if (nx < 0 || ny < 0 || nx + 1 > N || ny + 1 > N ||
-                (map[nx][ny] != PATHWAY_SYMBOL && map[nx][ny] != BERTH_SYMBOL))
+            int nx = cur.first + DX[i];
+            int ny = cur.second + DY[i];
+            if (nx < 0 || ny < 0 || nx + 1 > N || ny + 1 > N || map[nx][ny] != PATHWAY_SYMBOL || dis[nx][ny] != -1)
                 continue;
-
-            if (close_set.end() != close_set.find(std::make_pair(nx, ny))) // if neighbor is in close_set
-                continue;
-
-            auto iter = std::find_if(open_set.begin(), open_set.end(),
-                                     [nx, ny](Node *nodeptr)
-                                     {
-                                         return nx == nodeptr->x && ny == nodeptr->y;
-                                     });
-
-            int g = current->g + COST[i];
-            Node *neighbor = nullptr;
-
-            if (open_set.end() != iter) // in open_set
-            {
-                neighbor = *iter;
-                if (g < neighbor->g)
-                {
-                    neighbor->g = g;
-                    neighbor->f = g + neighbor->h;
-                    neighbor->prev = current;
-                }
-            }
-            else
-            {
-                neighbor = new Node(nx, ny);
-                neighbor->g = g, neighbor->h = Manhattan(nx, ny, dst_x, dst_y);
-                neighbor->f = neighbor->g + neighbor->h;
-                neighbor->prev = current;
-                open_set.emplace(neighbor);
-            }
+            pre[nx][ny] = cur;
+            dis[nx][ny] = dis[cur.first][cur.second] + 1;
+            queue[++rear] = {nx, ny};
         }
     }
-
-    std::for_each(close_vec.begin(), close_vec.end(), [](Node *nodeptr)
-                  { delete nodeptr; });
-
-    if (path.empty())
-        return -1;
-    else
-        return 0;
-}
-
-int Path2Directions(const std::vector<std::pair<int, int>> &reverse_path, std::vector<int> &directions)
-{
-    if (reverse_path.empty())
-        return -1;
-
-    int tmp;
-    directions.resize(reverse_path.size() - 1);
-
-    for (int i = 0; i < directions.size(); ++i)
-    {
-        if ((tmp = reverse_path[i + 1].first - reverse_path[i].first)) // x
-            directions[i] = tmp > 0 ? UP : DOWN;
-        else if ((tmp = reverse_path[i + 1].second - reverse_path[i].second)) // y
-            directions[i] = tmp > 0 ? LEFT : RIGHT;
-    }
-
-    return 0;
+    return false;
 }

@@ -1,36 +1,26 @@
 #ifndef UTILS_H
 #define UTILS_H 1
 
-#include <algorithm>
+#include <stdio.h>
 #include <cmath>
-#include <iostream>
-#include <set>
-#include <unordered_set>
+#include <cstring>
 #include <utility>
 #include <vector>
 #include "constants.h"
 
-namespace std
-{
-    template <>
-    struct hash<std::pair<int, int>>
-    {
-        size_t operator()(const std::pair<int, int> &p) const
-        {
-            return p.first * N + p.second;
-        }
-    };
-}
+extern char map[N][N];
 
 inline unsigned int Manhattan(int x1, int y1, int x2, int y2)
 {
     return abs(x1 - x2) + abs(y1 - y2);
 }
 
-void InitMap();
+inline void InitMap()
+{
+    for (int i = 0; i < N; ++i)
+        scanf("%s", map[i]);
+}
 
-int FindPath(int src_x, int src_y, int dst_x, int dst_y, std::vector<std::pair<int, int>> &path);
-
-int Path2Directions(const std::vector<std::pair<int, int>> &reverse_path, std::vector<int> &directions);
+bool FindPath(int src_x, int src_y, int dst_x, int dst_y, std::vector<int> &directions);
 
 #endif

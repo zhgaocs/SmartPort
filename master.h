@@ -5,12 +5,13 @@
 #define DEBUG_MODE 1
 #endif
 
+#include <algorithm>
 #include <numeric> // std::accumulate()
-#include <queue>
 #include "harbor.h"
 #include "utils.h"
 
 #ifdef DEBUG_MODE
+#include <chrono>
 #include <fstream>
 #include <iomanip>
 #endif
