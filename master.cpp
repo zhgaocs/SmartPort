@@ -9,10 +9,11 @@ Master::Master()
 
 void Master::init()
 {
-    char okk[3];
+    char str[3];
     int boat_capacity;
 
-    InitMap();
+    for (int i = 0; i < N; ++i)
+        fgets(map[i], N + 2, stdin);
 
     /* init berth */
     for (int i = 0; i < BERTH_NUM; ++i)
@@ -27,11 +28,9 @@ void Master::init()
     std::for_each(boats, boats + BOAT_NUM, [boat_capacity](Boat &b)
                   { b.rest_capacity = boat_capacity; });
 
+    // preprocess();
     /* OK */
-    scanf("%s", okk);
-
-    preprocess(); // must behind init berth
-
+    scanf("%s", str);
     printf("OK\n");
     fflush(stdout);
 }
@@ -39,6 +38,7 @@ void Master::init()
 void Master::run()
 {
     update();
+    printRobots();
     assignRobots();
     assignBoats();
     control();
@@ -96,6 +96,12 @@ void Master::update()
 
     scanf("%d%d", &frame_id, &current_money);
 
+#ifdef DEBUG_MODE
+    log << "--------------------------------------------------------------------------------" << frame_id
+        << "--------------------------------------------------------------------------------\n";
+    log.flush();
+#endif
+
     /* new items */
     scanf("%d", &new_items);
     for (int i = 0; i < new_items; ++i)
@@ -150,7 +156,7 @@ void Master::assignRobots()
         {
             if (robots[i].status) // running well
             {
-                int glob_item, local_item, glob_max = 0, local_max = 0;
+                int glob_item = -1, local_item, glob_max = 0, local_max = 0;
 
                 for (int j = items.size() - 1; j >= 0 && items[j].life_span > 0; --j) // greater index, greater life_span
                 {
@@ -176,30 +182,33 @@ void Master::assignRobots()
                     }
                 }
 
-                if (local_max) // find a max value item in 9*9
+                if (glob_item != -1)
                 {
-                    --rest_invoke;
+                    if (local_max) // find a max value item in 9*9
+                    {
+                        --rest_invoke;
 
-                    if (FindPath(robots[i].x, robots[i].y, items[local_item].x, items[local_item].y, robots[i].directions) &&
-                        robots[i].directions.size() <= items[local_item].life_span) // FindPath success
+                        if (FindPath(robots[i].x, robots[i].y, items[local_item].x, items[local_item].y, robots[i].directions) &&
+                            robots[i].directions.size() <= items[local_item].life_span) // FindPath success
+                        {
+                            robots[i].task = 1;
+                            robots[i].target_item = local_item;
+                            item_selected[local_item] = true;
+                            break;
+                        }
+                    }
+
+                    --rest_invoke;
+                    // there must be a global max value
+                    if (FindPath(robots[i].x, robots[i].y, items[glob_item].x, items[glob_item].y, robots[i].directions) &&
+                        robots[i].directions.size() <= items[glob_item].life_span) // FindPath success
                     {
                         robots[i].task = 1;
-                        robots[i].target_item = local_item;
-                        item_selected[local_item] = true;
-                        break;
+                        robots[i].target_item = glob_item;
+                        item_selected[glob_item] = true;
                     }
+                    // else ; nothing to do
                 }
-
-                --rest_invoke;
-                // there must be a global max value
-                if (FindPath(robots[i].x, robots[i].y, items[glob_item].x, items[glob_item].y, robots[i].directions) &&
-                    robots[i].directions.size() <= items[glob_item].life_span) // FindPath success
-                {
-                    robots[i].task = 1;
-                    robots[i].target_item = glob_item;
-                    item_selected[glob_item] = true;
-                }
-                // else ; nothing to do
             }
         }
         else if (2 == robots[i].task && robots[i].directions.empty()) // select berth, include recover
@@ -218,6 +227,7 @@ void Master::assignRobots()
                     {
                         if (path.size() < min_dist)
                         {
+                            log << path.size() << '\n';
                             berth_idx = j;
                             min_dist = path.size();
                             shortest_path = std::move(path);
@@ -231,7 +241,7 @@ void Master::assignRobots()
                     robots[i].directions = std::move(shortest_path);
                 }
                 else // cannot find a berth ???????????????????????????????????????
-                    ;
+                    log << "berth_idx: " << berth_idx << " rest_invoke: " << rest_invoke << " Robot#" << i << " cannot find a berth\n";
 
                 rest_invoke -= BERTH_NUM;
             }
@@ -274,10 +284,10 @@ void Master::control()
                         if (items[robots[i].target_item].life_span > 0)
                         {
                             printf("get %d\n", i);
-                            robots[i].task = 0;
 #ifdef DEBUG_MODE
                             log << "get " << i << '\n';
 #endif
+                            robots[i].task = 2;
                         }
                         else // item disappear
                             robots[i].task = 0;
@@ -302,7 +312,7 @@ void Master::control()
     /* BOAT */
     // TODO
 
-    printf("OK");
+    printf("OK\n");
     fflush(stdout);
 }
 
@@ -346,6 +356,19 @@ void Master::printBerths()
             << " |current_boat: " << std::setw(3) << berths[i].current_boat
             << " |waiting_boat: " << std::setw(3) << berths[i].waiting_boat
             << " |piled_values.size(): " << std::setw(3) << berths[i].piled_values.size() << '\n';
+    log.flush();
+}
+
+void Master::printItems()
+{
+    for (int i = 0; i < items.size(); ++i)
+        log << "Items#" << std::setw(3) << i
+            << " |x: " << std::setw(3) << items[i].x
+            << " |y: " << std::setw(3) << items[i].y
+            << " |value: " << std::setw(3) << items[i].value
+            << " |life_span: " << std::setw(3) << items[i].life_span
+            << " |is_selected: " << std::setw(3) << item_selected[i] << '\n';
+
     log.flush();
 }
 

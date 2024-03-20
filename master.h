@@ -38,6 +38,7 @@ private:
     void printRobots();
     void printBoats();
     void printBerths();
+    void printItems();
 #endif
 
 private:
