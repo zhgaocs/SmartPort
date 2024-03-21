@@ -28,7 +28,7 @@ struct Berth
     int total_value = 0;
     int current_boat = -1; // -1 - no boats
     int waiting_boat = -1; // -1 - no boats
-    int be_targeted = -1;  // -1 - no boats
+    int be_targeted = 0;   // 0 - no boats
     std::deque<int> piled_values;
     /*-------------------------------------------------------------------*/
 };

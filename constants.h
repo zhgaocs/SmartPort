@@ -5,7 +5,7 @@
 
 /* settings */
 constexpr int N = 200;
-constexpr int N_PLUS_TWO = N + 1;
+constexpr int N_PLUS_TWO = N + 2;
 constexpr char PATHWAY_SYMBOL = '.';
 constexpr char BERTH_SYMBOL = 'B';
 constexpr int ROBOT_NUM = 10;

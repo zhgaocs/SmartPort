@@ -2,7 +2,6 @@
 #define UTILS_H 1
 
 #include <cstring>
-#include <stdio.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>

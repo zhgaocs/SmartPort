@@ -6,6 +6,7 @@
 #endif
 
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <numeric> // std::accumulate()
 #include "utils.h"

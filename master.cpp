@@ -26,7 +26,7 @@ void Master::init()
     /* boat capacity */
     scanf("%d", &boat_capacity);
     std::for_each(boats, boats + BOAT_NUM, [boat_capacity](Boat &b)
-                  { b.rest_capacity = boat_capacity; });
+                  { b.max_capacity = b.rest_capacity = boat_capacity; });
 
     // preprocess();
     /* OK */
@@ -38,7 +38,9 @@ void Master::init()
 void Master::run()
 {
     update();
-    printRobots();
+    // printRobots();
+    printBoats();
+    printBerths();
     assignRobots();
     assignBoats();
     control();
@@ -121,11 +123,11 @@ void Master::update()
     {
         scanf("%d%d\n", &boats[i].status, &boats[i].pos);
 
-        if (boats[i].pos != -1)
+        if (boats[i].pos != -1) // cannot update berths where a ship has just left
         {
             if (!boats[i].status)
                 ;
-            if (1 == boats[i].status)
+            else if (1 == boats[i].status)
                 berths[boats[i].pos].current_boat = i;
             else
                 berths[boats[i].pos].waiting_boat = i;
@@ -227,7 +229,6 @@ void Master::assignRobots()
                     {
                         if (path.size() < min_dist)
                         {
-                            log << path.size() << '\n';
                             berth_idx = j;
                             min_dist = path.size();
                             shortest_path = std::move(path);
@@ -241,7 +242,7 @@ void Master::assignRobots()
                     robots[i].directions = std::move(shortest_path);
                 }
                 else // cannot find a berth ???????????????????????????????????????
-                    log << "berth_idx: " << berth_idx << " rest_invoke: " << rest_invoke << " Robot#" << i << " cannot find a berth\n";
+                    ;
 
                 rest_invoke -= BERTH_NUM;
             }
@@ -256,6 +257,85 @@ void Master::assignRobots()
 
 void Master::assignBoats()
 {
+    for (int i = 0; i < BOAT_NUM; ++i)
+    {
+        if (!boats[i].status) // moving
+            ;
+        else if (1 == boats[i].status) // running well
+        {
+            if (-1 == boats[i].pos) // transport completed, at virtual point
+            {
+                boats[i].rest_capacity = boats[i].max_capacity;
+
+                int berth_idx = -1;
+                int weights[BERTH_NUM], max = 0;
+
+                for (int j = 0; j < BERTH_NUM; ++j)
+                {
+                    if (berths[j].current_boat != -1 || berths[j].be_targeted ||
+                        berths[j].waiting_boat != -1 || berths[j].piled_values.empty())
+                    {
+                        weights[j] = 0;
+                        continue;
+                    }
+
+                    weights[j] = berths[j].total_value;
+
+                    if (weights[j] > max)
+                    {
+                        max = weights[j];
+                        berth_idx = j;
+                    }
+                }
+
+                if (berth_idx != -1)
+                {
+                    boats[i].pos = berth_idx;
+                    berths[berth_idx].be_targeted = 1;
+                    log << "boat#" << i << " select berth succeed\n";
+                }
+                else
+                    log << "boat#" << i << " select berth failed\n";
+
+                log.flush();
+            }
+            else // loading
+            {
+                if (!boats[i].rest_capacity) // full
+                {
+                    berths[boats[i].pos].current_boat = berths[boats[i].pos].waiting_boat;
+                    berths[boats[i].pos].waiting_boat = -1;
+                    berths[boats[i].pos].be_targeted = 0;
+                    boats[i].pos = -1; // this statement must be placed behind
+                    log << "boat#" << i << " is ready to return virtual point\n";
+                }
+                else if (!berths[boats[i].pos].piled_values.empty()) // not full, berth has items, continue loading
+                {
+                    Berth &berth = berths[boats[i].pos];
+
+                    int min = boats[i].rest_capacity < berth.piled_values.size()
+                                  ? boats[i].rest_capacity
+                                  : berth.piled_values.size();
+                    int sub_value = std::accumulate(berth.piled_values.cbegin(), berth.piled_values.cbegin() + min, 0);
+
+                    boats[i].rest_capacity -= min;
+                    berth.total_value -= sub_value;
+                    berth.piled_values.erase(berth.piled_values.begin(), berth.piled_values.begin() + min);
+
+                    if (!boats[i].rest_capacity || berth.piled_values.empty()) // full or berth has no items, go to virtual point
+                    {
+                        berths[boats[i].pos].current_boat = berths[boats[i].pos].waiting_boat;
+                        berths[boats[i].pos].waiting_boat = -1;
+                        berths[boats[i].pos].be_targeted = 0;
+                        boats[i].pos = -1; // this statement must be placed behind
+                        log << "boat#" << i << " is ready to return virtual point\n";
+                    }
+                }
+            }
+        }
+        else // waiting
+            ;
+    }
 }
 
 void Master::control()
@@ -310,7 +390,29 @@ void Master::control()
     }
 
     /* BOAT */
-    // TODO
+    for (int i = 0; i < BOAT_NUM; ++i)
+    {
+        if (1 == boats[i].status) // transport completed or loading
+        {
+            if (-1 == boats[i].pos) // go to virtual point
+            {
+                printf("go %d\n", i);
+#ifdef DEBUG_MODE
+                log << "go " << i << '\n';
+#endif
+            }
+            else // go to berth
+            {
+                if (berths[boats[i].pos].current_boat != i)
+                {
+                    printf("ship %d %d\n", i, boats[i].pos);
+#ifdef DEBUG_MODE
+                    log << "ship " << i << ' ' << boats[i].pos << '\n';
+#endif
+                }
+            }
+        }
+    }
 
     printf("OK\n");
     fflush(stdout);
@@ -340,22 +442,24 @@ void Master::printBoats()
         log << "Boat#" << std::setw(1) << i
             << " |status: " << std::setw(1) << boats[i].status
             << " |pos: " << std::setw(2) << boats[i].pos
-            << " |rest_capacity: " << std::setw(3) << boats[i].rest_capacity << '\n';
+            << " |rest_capacity: " << std::setw(3) << boats[i].rest_capacity
+            << " |max_capacity: " << std::setw(3) << boats[i].max_capacity << '\n';
     log.flush();
 }
 
 void Master::printBerths()
 {
     for (int i = 0; i < BERTH_NUM; ++i)
-        log << "Berth#" << std::setw(3) << i
+        log << "Berth#" << std::setw(1) << i
             << " |x: " << std::setw(3) << berths[i].x
             << " |y: " << std::setw(3) << berths[i].y
-            << " |transport_time: " << std::setw(3) << berths[i].transport_time
-            << " |loading_speed: " << std::setw(3) << berths[i].loading_speed
-            << " |total_value: " << std::setw(3) << berths[i].total_value
-            << " |current_boat: " << std::setw(3) << berths[i].current_boat
-            << " |waiting_boat: " << std::setw(3) << berths[i].waiting_boat
-            << " |piled_values.size(): " << std::setw(3) << berths[i].piled_values.size() << '\n';
+            << " |transport_time: " << std::setw(4) << berths[i].transport_time
+            << " |loading_speed: " << std::setw(1) << berths[i].loading_speed
+            << " |total_value: " << std::setw(4) << berths[i].total_value
+            << " |current_boat: " << std::setw(2) << berths[i].current_boat
+            << " |waiting_boat: " << std::setw(2) << berths[i].waiting_boat
+            << " |be_targeted: " << std::setw(1) << berths[i].be_targeted
+            << " |piled_values.size(): " << std::setw(2) << berths[i].piled_values.size() << '\n';
     log.flush();
 }
 
