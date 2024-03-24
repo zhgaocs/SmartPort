@@ -4,8 +4,8 @@ int main()
 {
     Master master;
     master.init();
-    
-    for(int i = 0; i < 15000; ++i)
+
+    for (int i = 0; i < 15000; ++i)
     {
         master.run();
     }

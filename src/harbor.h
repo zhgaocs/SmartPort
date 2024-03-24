@@ -14,8 +14,6 @@ struct Robot
     int task = 0;                // 0 - no tasks, 1 - get item, 2 - pull item
     int target_item = -1;        // -1 - no items selected
     int target_berth = -1;       // -1 - no berths selected
-    int is_stoped = 0;           // 0 - not stoped, 1 - stoped //
-    int is_dead = 0;             // 0 - not dead, 1 - dead
     std::vector<int> directions; // reverse path
     /*-------------------------------------------------------------------*/
 };
@@ -29,18 +27,17 @@ struct Berth
     /*-------------------------------------------------------------------*/
     int total_value = 0;
     int current_boat = -1; // -1 - no boats
-    int latest_return;
     std::deque<int> piled_values;
     /*-------------------------------------------------------------------*/
 };
 
 struct Boat
 {
-    int status = 1;   /* 0 - moving, 1 - running well, 2 - waiting */
-    int pos = -1;     /* -1 - virtual point */
-    int max_capacity; /* 1 <= capacity <= 1000*/
+    int status = 1; /* 0 - moving, 1 - running well, 2 - waiting */
+    int pos = -1;   /* -1 - virtual point */
     int rest_capacity;
     int target_pos = -2;
+    static int capacity; /* 1 <= capacity <= 1000*/
 };
 
 struct Item
