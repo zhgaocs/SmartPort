@@ -32,4 +32,4 @@
 *.app
 
 # Exclude build directory
-/build/
+src/build/
