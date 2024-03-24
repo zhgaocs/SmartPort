@@ -31,5 +31,6 @@
 *.out
 *.app
 
-# Exclude build directory
+# Excluded directory
 src/build/
+tools/LinuxReleasev2.0/Demo
