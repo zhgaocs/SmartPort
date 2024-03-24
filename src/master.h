@@ -27,7 +27,6 @@ private:
     void assignRobots();
     void assignBoats();
     void control();
-    int choose_berth(int i);
     int robot_scan(int i, std::vector<int> &directions);
 
     inline int point_hash(std::pair<int, int> &p)

@@ -531,49 +531,6 @@ void Master::control()
     fflush(stdout);
 }
 
-// choose the most valuable berth for boat[i]
-int Master::choose_berth(int i)
-{
-    float v, max_v = 0;
-    int berth_idx = -1;
-
-    for (int j = 0; j < BERTH_NUM; ++j)
-    {
-        if (berths[j].current_boat != -1 || berths[j].piled_values.empty())
-            continue;
-
-        bool is_targeted = false;
-
-        for (int k = 0; k < BOAT_NUM; ++k)
-        {
-            if (boats[k].target_pos == j)
-            {
-                is_targeted = true;
-                break;
-            }
-        }
-
-        if (is_targeted)
-            continue;
-
-        v = 1.0 * berths[j].total_value / (berths[j].transport_time + berths[j].piled_values.size() / berths[j].loading_speed) - 0.01 * j; // NOTICE:this is a float devide,may cost a little time
-
-        if (v > max_v)
-        {
-            max_v = v;
-            berth_idx = j;
-        }
-    }
-
-    // choose the berth
-    if (berth_idx != -1)
-        boats[i].target_pos = berth_idx;
-    else
-        boats[i].target_pos = -2;
-
-    return boats[i].target_pos;
-}
-
 // Detect for collisions and return the number of robots that will collide, need robots' next position
 int Master::has_collision(std::unordered_set<int> &collision_robots, std::vector<std::pair<int, int>> &next_pos)
 {
